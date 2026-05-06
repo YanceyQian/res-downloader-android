@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">爱享素材下载器</string>
+
+    <!-- Main Screen -->
+    <string name="start_proxy">启动代理</string>
+    <string name="stop_proxy">停止代理</string>
+    <string name="proxy_running">代理运行中</string>
+    <string name="proxy_stopped">代理已停止</string>
+    <string name="no_resources">暂无资源</string>
+    <string name="pull_to_refresh">下拉刷新</string>
+
+    <!-- Filter -->
+    <string name="filter_all">全部</string>
+    <string name="filter_video">视频</string>
+    <string name="filter_audio">音频</string>
+    <string name="filter_image">图片</string>
+    <string name="filter_m3u8">M3U8</string>
+
+    <!-- Download -->
+    <string name="download">下载</string>
+    <string name="downloading">下载中</string>
+    <string name="downloaded">已下载</string>
+    <string name="download_failed">下载失败</string>
+    <string name="download_paused">已暂停</string>
+    <string name="download_progress">%1$d%%</string>
+    <string name="download_complete">下载完成</string>
+
+    <!-- Settings -->
+    <string name="settings">设置</string>
+    <string name="download_path">下载目录</string>
+    <string name="proxy_port">代理端口</string>
+    <string name="language">语言</string>
+    <string name="check_update">检查更新</string>
+    <string name="about">关于</string>
+    <string name="version">版本</string>
+    <string name="current_version">当前版本: %1$s</string>
+
+    <!-- Update -->
+    <string name="new_version_available">发现新版本</string>
+    <string name="update_now">立即更新</string>
+    <string name="update_later">稍后再说</string>
+    <string name="downloading_update">正在下载更新…</string>
+    <string name="update_downloaded">更新已下载</string>
+    <string name="install_now">立即安装</string>
+    <string name="no_update">已是最新版本</string>
+
+    <!-- Permissions -->
+    <string name="permission_required">需要权限</string>
+    <string name="storage_permission_rationale">需要存储权限来保存下载的文件</string>
+    <string name="notification_permission_rationale">需要通知权限来显示下载进度</string>
+    <string name="grant_permission">授予权限</string>
+
+    <!-- Certificate -->
+    <string name="install_certificate">安装证书</string>
+    <string name="certificate_rationale">为了拦截 HTTPS 流量，需要安装 CA 证书。请按照提示操作：\n\n1. 下载证书\n2. 打开设置 → 安全 → 加密与凭据 → 从存储设备安装证书\n3. 选择已下载的证书文件</string>
+    <string name="certificate_downloaded">证书已下载</string>
+
+    <!-- Battery Optimization -->
+    <string name="battery_optimization">电池优化</string>
+    <string name="battery_optimization_rationale">为了保证后台下载和代理功能正常运行，请禁用电池优化。</string>
+    <string name="disable_optimization">禁用优化</string>
+
+    <!-- Common -->
+    <string name="cancel">取消</string>
+    <string name="confirm">确认</string>
+    <string name="ok">确定</string>
+    <string name="error">错误</string>
+    <string name="retry">重试</string>
+    <string name="copy_link">复制链接</string>
+    <string name="share">分享</string>
+    <string name="delete">删除</string>
+    <string name="open">打开</string>
+    <string name="select_folder">选择文件夹</string>
+</resources>

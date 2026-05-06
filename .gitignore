@@ -1,0 +1,62 @@
+# Android
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+*.apk
+*.ap_
+*.aab
+
+# Keystore files (!!! 非常重要，不要提交到仓库 !!!)
+*.keystore
+*.jks
+*.p12
+*.pem
+
+# Android Studio
+*.iml
+.idea/
+*.swp
+*.swo
+*~
+
+# Build
+build/
+
+# Logs
+*.log
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+vendor/
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE and temporary files
+.trae-cn/
+.idea/
+.vscode/

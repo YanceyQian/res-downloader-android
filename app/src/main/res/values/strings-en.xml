@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Res Downloader</string>
+
+    <!-- Main Screen -->
+    <string name="start_proxy">Start Proxy</string>
+    <string name="stop_proxy">Stop Proxy</string>
+    <string name="proxy_running">Proxy Running</string>
+    <string name="proxy_stopped">Proxy Stopped</string>
+    <string name="no_resources">No Resources</string>
+    <string name="pull_to_refresh">Pull to Refresh</string>
+
+    <!-- Filter -->
+    <string name="filter_all">All</string>
+    <string name="filter_video">Video</string>
+    <string name="filter_audio">Audio</string>
+    <string name="filter_image">Image</string>
+    <string name="filter_m3u8">M3U8</string>
+
+    <!-- Download -->
+    <string name="download">Download</string>
+    <string name="downloading">Downloading</string>
+    <string name="downloaded">Downloaded</string>
+    <string name="download_failed">Download Failed</string>
+    <string name="download_paused">Paused</string>
+    <string name="download_progress">%1$d%%</string>
+    <string name="download_complete">Download Complete</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="download_path">Download Path</string>
+    <string name="proxy_port">Proxy Port</string>
+    <string name="language">Language</string>
+    <string name="check_update">Check Update</string>
+    <string name="about">About</string>
+    <string name="version">Version</string>
+    <string name="current_version">Current Version: %1$s</string>
+
+    <!-- Update -->
+    <string name="new_version_available">New Version Available</string>
+    <string name="update_now">Update Now</string>
+    <string name="update_later">Later</string>
+    <string name="downloading_update">Downloading Update…</string>
+    <string name="update_downloaded">Update Downloaded</string>
+    <string name="install_now">Install Now</string>
+    <string name="no_update">Already Up to Date</string>
+
+    <!-- Permissions -->
+    <string name="permission_required">Permission Required</string>
+    <string name="storage_permission_rationale">Storage permission is required to save downloaded files</string>
+    <string name="notification_permission_rationale">Notification permission is required to show download progress</string>
+    <string name="grant_permission">Grant Permission</string>
+
+    <!-- Certificate -->
+    <string name="install_certificate">Install Certificate</string>
+    <string name="certificate_rationale">To intercept HTTPS traffic, you need to install the CA certificate. Please follow these steps:\n\n1. Download certificate\n2. Open Settings → Security → Encryption & Credentials → Install from storage\n3. Select the downloaded certificate file</string>
+    <string name="certificate_downloaded">Certificate Downloaded</string>
+
+    <!-- Battery Optimization -->
+    <string name="battery_optimization">Battery Optimization</string>
+    <string name="battery_optimization_rationale">To ensure background downloads and proxy functionality, please disable battery optimization.</string>
+    <string name="disable_optimization">Disable Optimization</string>
+
+    <!-- Common -->
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="ok">OK</string>
+    <string name="error">Error</string>
+    <string name="retry">Retry</string>
+    <string name="copy_link">Copy Link</string>
+    <string name="share">Share</string>
+    <string name="delete">Delete</string>
+    <string name="open">Open</string>
+    <string name="select_folder">Select Folder</string>
+</resources>
