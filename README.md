@@ -52,7 +52,7 @@ res-downloader-android/
 │   │   ├── res/                  # 资源文件
 │   │   └── AndroidManifest.xml   # 应用清单
 │   └── build.gradle.kts
-├── core/                         # Go 核心库
+├── core/                         # Go 核心代码（暂未集成）
 │   ├── go.mod
 │   └── resdownloader.go
 ├── docs/                         # 文档
@@ -65,7 +65,7 @@ res-downloader-android/
 
 ## 技术栈
 
-- **语言**：Kotlin + Go
+- **语言**：Kotlin
 - **UI 框架**：Jetpack Compose
 - **架构**：MVVM + Clean Architecture
 - **依赖注入**：Hilt
@@ -78,9 +78,7 @@ res-downloader-android/
 
 - Android Studio Hedgehog (2023.1.1) 或更高
 - Android SDK 34 (API Level 34)
-- JDK 17+
-- Go 1.22+ (用于编译 Go 核心库)
-- Go Mobile 工具链
+- JDK 17+（Android Studio 自带）
 
 详细的环境配置请参考 [编译指南](docs/ANDROID_BUILD_GUIDE.md)。
 
@@ -152,20 +150,6 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 4. **安装更新**：调用系统安装程序
 
 详细说明请参考 [更新机制文档](docs/UPDATE_MECHANISM.md)。
-
-## 编译 Go 核心库（可选）
-
-如需修改 Go 核心代码并重新编译：
-
-```bash
-cd core
-
-# 获取依赖
-go mod tidy
-
-# 编译为 Android AAR
-gomobile bind -target=android -o ../app/libs/core.aar .
-```
 
 ## 权限说明
 
