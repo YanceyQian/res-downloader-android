@@ -16,10 +16,10 @@
 
 ### 第一步：准备环境
 
-确保您的项目已正确设置：
-- 已建立自己的 GitHub 仓库
+确保项目已正确设置：
+- 已建立 GitHub 仓库
 - 已配置签名
-- 已修改 UpdateRepository.kt 中的仓库地址
+- UpdateRepository.kt 中的仓库地址已正确配置
 
 ### 第二步：下载原项目最新代码
 
@@ -27,7 +27,6 @@
 
 ```bash
 # 添加原项目为远程源（首次需要）
-cd E:\res-download\res-downloader-android
 git remote add upstream https://github.com/putyy/res-downloader.git
 
 # 以后每次同步时

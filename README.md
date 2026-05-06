@@ -11,26 +11,24 @@
 - 🔄 **自动更新**：集成 GitHub Releases 自动检测和安装更新
 - 🌐 **多语言**：支持简体中文和英文
 
-## ⚠️ 关于更新
+## 📥 下载安装
 
-**重要提示**：原项目 `putyy/res-downloader` 只发布桌面版本，不会发布 Android APK。
+从 [GitHub Releases](https://github.com/YanceyQian/res-downloader-android/releases) 下载最新 APK 并安装。
 
-- 您需要自己维护 Android 版本的更新
-- 可以在设置中点击"检查更新"
-- 如果有 APK 会自动下载安装，否则会跳转到 GitHub Releases 页面
-- 详细说明见 [更新机制文档](docs/UPDATE_MECHANISM.md)
+应用支持通过 GitHub Releases 自动更新，在设置中点击"检查更新"即可。
+
+详细说明见 [更新机制文档](docs/UPDATE_MECHANISM.md)。
 
 ## 📚 文档速查
 
 | 文档 | 说明 |
 |------|------|
-| [QUICKSTART.md](QUICKSTART.md) | 🌟 快速开始（新手必读） |
-| [GITHUB_RELEASE.md](docs/GITHUB_RELEASE.md) | 📦 创建自己的仓库并发布 |
-| [SYNC_FLOW.md](docs/SYNC_FLOW.md) | 🔄 原项目更新同步流程 |
-| [APP_STORE_RELEASE.md](docs/APP_STORE_RELEASE.md) | 📱 应用商店发布指南 |
-| [UPDATE_MECHANISM.md](docs/UPDATE_MECHANISM.md) | 🔄 更新机制说明 |
-| [ANDROID_BUILD_GUIDE.md](docs/ANDROID_BUILD_GUIDE.md) | 🏗️ Android 编译指南 |
 | [USER_GUIDE.md](docs/USER_GUIDE.md) | 📖 用户使用指南 |
+| [UPDATE_MECHANISM.md](docs/UPDATE_MECHANISM.md) | 🔄 更新机制说明 |
+| [ANDROID_BUILD_GUIDE.md](docs/ANDROID_BUILD_GUIDE.md) | 🏗️ 开发者编译指南 |
+| [APP_STORE_RELEASE.md](docs/APP_STORE_RELEASE.md) | 📱 应用商店发布指南 |
+| [SYNC_FLOW.md](docs/SYNC_FLOW.md) | 🔄 同步原项目更新流程 |
+| [GITHUB_RELEASE.md](docs/GITHUB_RELEASE.md) | 📦 GitHub Releases 发布指南 |
 
 ## 项目结构
 
@@ -91,7 +89,7 @@ res-downloader-android/
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/your-username/res-downloader-android.git
+git clone https://github.com/YanceyQian/res-downloader-android.git
 cd res-downloader-android
 ```
 
@@ -141,11 +139,6 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 1. 开启代理后，在其他应用中访问目标资源
 2. 返回应用，在资源列表中找到目标项
 3. 点击下载按钮开始下载
-
-### 配置更新
-
-应用的自动更新功能默认检测 `putyy/res-downloader` 仓库的 Releases。
-如需使用自己的更新源，修改 `UpdateRepository.kt` 中的 API 地址。
 
 详细使用说明请参考 [用户指南](docs/USER_GUIDE.md)。
 
@@ -245,14 +238,14 @@ private fun detectPlatform(url: String): Platform {
 
 ```
 Copyright (c) 2025 putyy (Original Project)
-Copyright (c) 2025 Your Name (Android Port)
+Copyright (c) 2025 YanceyQian (Android Port)
 ```
 
 ### 开源声明
 
 本项目基于 [putyy/res-downloader](https://github.com/putyy/res-downloader) 开发。
-- 已保留原许可证和版权声明
-- 已在 NOTICE 文件中说明修改内容
+- 遵循 Apache License 2.0 许可证
+- 保留原许可证和版权声明
 
 详细说明请见：
 - [LICENSE](LICENSE)
