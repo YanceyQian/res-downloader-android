@@ -72,6 +72,9 @@ class ProxyRepository @Inject constructor(
     }
 
     fun addResource(resource: ResourceInfo) {
+        // 首先添加到 ProxyVpnService，确保不会被覆盖
+        ProxyVpnService.addResource(resource)
+        
         val currentList = _resources.value.toMutableList()
         if (currentList.none { it.id == resource.id }) {
             val insertTail = preferencesManager.getInsertTailSync()
@@ -86,6 +89,7 @@ class ProxyRepository @Inject constructor(
     }
 
     fun removeResource(id: String) {
+        ProxyVpnService.removeResource(id)
         _resources.value = _resources.value.filter { it.id != id }
         applyFilter()
     }

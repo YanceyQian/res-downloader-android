@@ -28,10 +28,6 @@
 
 - 🆕 [GitHub 下载](https://github.com/YanceyQian/res-downloader-android/releases)
 
-## 🖼️ 预览
-
-（此处可放置应用截图）
-
 ## 📖 快速开始
 
 ### 启动代理
@@ -52,6 +48,7 @@
 
 | 文档 | 说明 |
 |------|------|
+| [CHANGELOG.md](CHANGELOG.md) | 📝 更新日志 |
 | [USER_GUIDE.md](docs/USER_GUIDE.md) | 📖 用户使用指南 |
 | [UPDATE_MECHANISM.md](docs/UPDATE_MECHANISM.md) | 🔄 更新机制说明 |
 | [ANDROID_BUILD_GUIDE.md](docs/ANDROID_BUILD_GUIDE.md) | 🏗️ 开发者编译指南 |

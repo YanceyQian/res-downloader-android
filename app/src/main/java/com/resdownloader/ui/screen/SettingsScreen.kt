@@ -682,6 +682,12 @@ fun SettingsScreen(
             onInstall = {
                 showCertificateDialog = false
                 onRequestCertificateInstall()
+            },
+            onMarkInstalled = {
+                scope.launch {
+                    viewModel.setCertificateInstalled(true)
+                    Toast.makeText(context, "已标记证书为已安装", Toast.LENGTH_SHORT).show()
+                }
             }
         )
     }
@@ -736,7 +742,7 @@ private fun SettingsClickableItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium) // 裁剪涟漪效果
+            .clip(MaterialTheme.shapes.medium)
             .clickable(onClick = onClick)
             .padding(vertical = 14.dp)
     ) {
@@ -744,11 +750,12 @@ private fun SettingsClickableItem(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 图标容器 - 使用 Surface 限制阴影范围
+            // 图标容器
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
+                shadowElevation = 0.dp // 移除阴影
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -831,12 +838,13 @@ private fun SettingsSwitchItem(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 图标容器 - 使用 Surface 限制阴影范围
+            // 图标容器
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = RoundedCornerShape(10.dp),
                 color = if (checked) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                shadowElevation = 0.dp // 移除阴影
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -919,11 +927,12 @@ private fun SettingsLoadingItem(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 图标容器 - 使用 Surface 限制阴影范围
+            // 图标容器
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
+                shadowElevation = 0.dp // 移除阴影
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -1197,7 +1206,7 @@ private fun RuleEditorDialog(
                     .verticalScroll(scrollState)
             ) {
                 Text(
-                    text = stringResource(R.string.domain_rule_tip),
+                    text = "设置需要抓取的域名规则：\n• 使用 * 匹配所有子域名（例如 *.douyin.com）\n• 每行一个规则\n• 使用 ! 开头表示排除（例如 !static.douyin.com）",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline
                 )
@@ -1230,7 +1239,8 @@ private fun RuleEditorDialog(
 @Composable
 private fun CertificateInstallDialog(
     onDismiss: () -> Unit,
-    onInstall: () -> Unit
+    onInstall: () -> Unit,
+    onMarkInstalled: () -> Unit
 ) {
     val context = LocalContext.current
     val githubCertUrl = "$GITHUB_REPO/releases/latest"
@@ -1358,7 +1368,14 @@ private fun CertificateInstallDialog(
                 }
             }
         },
-        confirmButton = {},
+        confirmButton = {
+            TextButton(onClick = {
+                onMarkInstalled()
+                onDismiss()
+            }) {
+                Text("我已安装证书")
+            }
+        },
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.cancel))

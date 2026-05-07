@@ -59,6 +59,12 @@ class ProxyVpnService : VpnService() {
             }
         }
         
+        fun removeResource(id: String) {
+            synchronized(resourcesValue) {
+                resourcesValue.removeIf { it.id == id }
+            }
+        }
+        
         fun getResources(): List<com.resdownloader.data.model.ResourceInfo> {
             synchronized(resourcesValue) {
                 return resourcesValue.toList()
