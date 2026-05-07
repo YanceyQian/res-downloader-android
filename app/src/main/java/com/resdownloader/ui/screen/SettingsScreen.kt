@@ -1916,17 +1916,3 @@ private fun openBatteryOptimizationSettings(context: Context) {
         }
     }
 }
-
-// ==================== 证书下载 ====================
-
-private fun downloadCertificate(context: Context) {
-    try {
-        // 从 releases 页面下载证书文件
-        val certUrl = "$GITHUB_REPO/releases/latest"
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(certUrl))
-        context.startActivity(intent)
-        Toast.makeText(context, "请在 releases 页面下载证书压缩包", Toast.LENGTH_LONG).show()
-    } catch (e: Exception) {
-        Toast.makeText(context, "下载失败: ${e.message}", Toast.LENGTH_SHORT).show()
-    }
-}
