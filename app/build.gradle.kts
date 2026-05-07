@@ -13,8 +13,8 @@ android {
         applicationId = "com.resdownloader"
         minSdk = 24
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.1.0"
         buildConfigField("String", "GITHUB_REPO", "\"YanceyQian/res-downloader-android\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

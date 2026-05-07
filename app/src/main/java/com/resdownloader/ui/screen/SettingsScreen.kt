@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
@@ -37,13 +38,18 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.core.content.getSystemService
 import com.resdownloader.R
 import com.resdownloader.ResDownloaderApp
 import com.resdownloader.data.preferences.LanguageManager
 import com.resdownloader.data.repository.UpdateState
 import com.resdownloader.ui.viewmodel.SettingsViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
 private const val TAG = "SettingsScreen"
 private const val GITHUB_REPO = "https://github.com/YanceyQian/res-downloader-android"
@@ -1222,7 +1228,13 @@ private fun RuleEditorDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onSave) {
+            TextButton(onClick = {
+                try {
+                    onSave()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }) {
                 Text(stringResource(R.string.confirm))
             }
         },
@@ -1243,9 +1255,8 @@ private fun CertificateInstallDialog(
     onMarkInstalled: () -> Unit
 ) {
     val context = LocalContext.current
-    val githubCertUrl = "$GITHUB_REPO/releases/latest"
-    val baiduCertUrl = "https://pan.baidu.com/s/1_yuYcNTyrgUuKcylCQ_o1w"
-    val baiduPassword = "7y52"
+    val scope = rememberCoroutineScope()
+    var isDownloading by remember { mutableStateOf(false) }
     
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1257,26 +1268,38 @@ private fun CertificateInstallDialog(
                 Text(
                     text = "为了拦截 HTTPS 流量，需要安装 CA 证书。\n\n" +
                             "安装步骤：\n" +
-                            "1. 下载证书压缩包\n" +
-                            "2. 解压后得到 ca.crt 证书文件\n" +
-                            "3. 打开「设置」→「安全」→「加密与凭据」\n" +
-                            "4. 选择「从存储设备安装证书」\n" +
-                            "5. 选择证书文件，命名后确认安装\n\n" +
+                            "1. 点击下载证书文件\n" +
+                            "2. 打开「设置」→「安全」→「加密与凭据」\n" +
+                            "3. 选择「从存储设备安装证书」\n" +
+                            "4. 选择证书文件，命名后确认安装\n\n" +
                             "⚠️ 注意：安装证书后才能抓取 HTTPS 网站的视频和音频资源。",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // GitHub 下载
+                // 直接下载证书
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubCertUrl))
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "无法打开下载页面", Toast.LENGTH_SHORT).show()
+                        .clickable(enabled = !isDownloading) {
+                            isDownloading = true
+                            scope.launch {
+                                val certFile = downloadCertificate(context)
+                                if (certFile != null) {
+                                    Toast.makeText(
+                                        context,
+                                        "证书已下载: ${certFile.absolutePath}",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                    openCertificateFile(context, certFile)
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "证书下载失败，请尝试其他方式",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                                isDownloading = false
                             }
                         },
                     colors = CardDefaults.cardColors(
@@ -1288,49 +1311,45 @@ private fun CertificateInstallDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Code,
+                            imageVector = if (isDownloading) Icons.Default.Downloading else Icons.Default.Download,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "GitHub 下载",
+                                text = if (isDownloading) "下载中..." else "直接下载证书",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Text(
-                                text = "点击前往 GitHub releases 页面",
+                                text = "点击下载证书并自动打开安装",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                             )
                         }
-                        Icon(
-                            imageVector = Icons.Default.OpenInNew,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        if (!isDownloading) {
+                            Icon(
+                                imageVector = Icons.Default.OpenInNew,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
                     }
                 }
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // 百度网盘下载
+                // GitHub 下载（备用）
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
                             try {
-                                // 复制提取码到剪贴板
-                                val clipboard = context.getSystemService<android.content.ClipboardManager>()
-                                val clip = android.content.ClipData.newPlainText("提取码", baiduPassword)
-                                clipboard?.setPrimaryClip(clip)
-                                // 打开网盘页面
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(baiduCertUrl))
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/putyy/res-downloader/releases/latest"))
                                 context.startActivity(intent)
-                                Toast.makeText(context, "已复制提取码: $baiduPassword", Toast.LENGTH_SHORT).show()
                             } catch (e: Exception) {
-                                Toast.makeText(context, "无法打开网盘页面", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "无法打开下载页面", Toast.LENGTH_SHORT).show()
                             }
                         },
                     colors = CardDefaults.cardColors(
@@ -1342,25 +1361,25 @@ private fun CertificateInstallDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.CloudDownload,
+                            imageVector = Icons.Default.Code,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "百度网盘下载",
+                                text = "GitHub 备用下载",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                             Text(
-                                text = "点击复制提取码并打开网盘",
+                                text = "前往原项目 releases 页面",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                             )
                         }
                         Icon(
-                            imageVector = Icons.Default.ContentCopy,
+                            imageVector = Icons.Default.OpenInNew,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSecondaryContainer
                         )
@@ -1430,6 +1449,7 @@ private fun AboutDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -1645,7 +1665,7 @@ private fun AboutDialog(
                         Text(stringResource(R.string.about_source_code))
                     }
                     TextButton(onClick = {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$GITHUB_REPO/releases")))
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$GITHUB_REPO/blob/main/CHANGELOG.md")))
                     }) {
                         Icon(Icons.Outlined.History, null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
@@ -1660,8 +1680,24 @@ private fun AboutDialog(
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     TextButton(onClick = {
-                        // 证书下载
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://raw.githubusercontent.com/YanceyQian/res-downloader-android/main/cert/ca.crt")))
+                        // 直接下载证书
+                        scope.launch {
+                            val certFile = downloadCertificate(context)
+                            if (certFile != null) {
+                                Toast.makeText(
+                                    context,
+                                    "证书已下载: ${certFile.absolutePath}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                openCertificateFile(context, certFile)
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "证书下载失败，请尝试其他方式",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
                     }) {
                         Icon(Icons.Outlined.Security, null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
@@ -1790,6 +1826,58 @@ private fun getQualityText(quality: Int): String {
         3 -> "中画质"
         4 -> "低画质"
         else -> "默认"
+    }
+}
+
+// ==================== 证书下载辅助函数 ====================
+
+private suspend fun downloadCertificate(context: Context): File? {
+    return withContext(Dispatchers.IO) {
+        try {
+            // 从 raw 资源读取证书
+            val inputStream = context.resources.openRawResource(R.raw.res_downloader_public)
+            
+            // 获取下载目录
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val certFile = File(downloadsDir, "res-downloader-public.crt")
+            
+            // 写入文件
+            val outputStream = FileOutputStream(certFile)
+            inputStream.copyTo(outputStream)
+            
+            outputStream.close()
+            inputStream.close()
+            
+            certFile
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to download certificate", e)
+            null
+        }
+    }
+}
+
+private fun openCertificateFile(context: Context, file: File) {
+    try {
+        val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+        } else {
+            Uri.fromFile(file)
+        }
+        
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/x-x509-ca-cert")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to open certificate", e)
+        Toast.makeText(context, "无法打开证书文件: ${e.message}", Toast.LENGTH_LONG).show()
     }
 }
 
