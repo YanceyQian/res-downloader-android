@@ -1340,16 +1340,22 @@ private fun CertificateInstallDialog(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // GitHub 下载（备用）
+                // 百度网盘下载（备用）
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
                             try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/putyy/res-downloader/releases/latest"))
+                                // 复制提取码到剪贴板
+                                val clipboard = context.getSystemService<android.content.ClipboardManager>()
+                                val clip = android.content.ClipData.newPlainText("提取码", "7y52")
+                                clipboard?.setPrimaryClip(clip)
+                                // 打开网盘页面
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://pan.baidu.com/s/1_yuYcNTyrgUuKcylCQ_o1w"))
                                 context.startActivity(intent)
+                                Toast.makeText(context, "已复制提取码: 7y52", Toast.LENGTH_SHORT).show()
                             } catch (e: Exception) {
-                                Toast.makeText(context, "无法打开下载页面", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "无法打开网盘页面", Toast.LENGTH_SHORT).show()
                             }
                         },
                     colors = CardDefaults.cardColors(
@@ -1361,25 +1367,25 @@ private fun CertificateInstallDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Code,
+                            imageVector = Icons.Default.CloudDownload,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "GitHub 备用下载",
+                                text = "百度云网盘备用下载",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                             Text(
-                                text = "前往原项目 releases 页面",
+                                text = "点击复制提取码并打开网盘",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                             )
                         }
                         Icon(
-                            imageVector = Icons.Default.OpenInNew,
+                            imageVector = Icons.Default.ContentCopy,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSecondaryContainer
                         )
