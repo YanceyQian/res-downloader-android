@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 功能优化
 
-- 🔧 优化证书安装对话框，提供"直接下载"和"GitHub备用下载"两种方式
+- 🔧 优化证书安装对话框，提供"直接下载"和"百度云网盘备用下载"两种方式
 - 🔧 优化关于对话框中的证书下载按钮
 - 🔧 为域名规则编辑对话框添加异常处理，防止闪退
 
