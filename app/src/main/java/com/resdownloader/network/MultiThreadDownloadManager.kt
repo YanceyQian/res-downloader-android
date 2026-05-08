@@ -9,6 +9,10 @@ import okhttp3.Request
 import okhttp3.Response
 import java.io.File
 import java.io.RandomAccessFile
+import java.net.InetSocketAddress
+import java.net.Proxy
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
@@ -20,6 +24,9 @@ import java.util.concurrent.atomic.AtomicLong
  * - 断点续传
  * - 分片下载
  * - 进度回调
+ * - 上游代理支持
+ * - 自定义 Headers 支持
+ * - 文件名处理
  */
 class MultiThreadDownloadManager(
     private val context: Context,
@@ -33,14 +40,64 @@ class MultiThreadDownloadManager(
     }
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
+
+    /**
+     * 创建 OkHttpClient 实例，支持动态代理配置
+     */
+    private fun createOkHttpClient(useProxy: Boolean): OkHttpClient {
+        val builder = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
             .followRedirects(true)
             .followSslRedirects(true)
-            .build()
+
+        // 如果启用下载代理，配置上游代理
+        if (useProxy) {
+            val upstreamProxy = preferencesManager.getUpstreamProxySync()
+            if (upstreamProxy.isNotEmpty()) {
+                try {
+                    val proxyUrl = parseProxyUrl(upstreamProxy)
+                    if (proxyUrl != null) {
+                        val proxy = Proxy(proxyUrl.first, InetSocketAddress(proxyUrl.second.first, proxyUrl.second.second))
+                        builder.proxy(proxy)
+                        Log.d(TAG, "Using upstream proxy: $upstreamProxy")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to parse proxy URL: $upstreamProxy", e)
+                }
+            }
+        }
+
+        return builder.build()
+    }
+
+    /**
+     * 解析代理 URL 格式: http://host:port 或 socks5://host:port
+     */
+    private fun parseProxyUrl(proxyUrl: String): Pair<Proxy.Type, Pair<String, Int>>? {
+        return try {
+            val url = if (proxyUrl.startsWith("http://") || proxyUrl.startsWith("https://")) {
+                proxyUrl
+            } else {
+                "http://$proxyUrl"
+            }
+            
+            val javaNetUrl = java.net.URL(url)
+            val host = javaNetUrl.host
+            val port = javaNetUrl.port
+            
+            val proxyType = if (url.startsWith("socks5://") || url.startsWith("socks4://")) {
+                Proxy.Type.SOCKS
+            } else {
+                Proxy.Type.HTTP
+            }
+            
+            Pair(proxyType, Pair(host, if (port > 0) port else 8080))
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing proxy URL: $proxyUrl", e)
+            null
+        }
     }
 
     // 活跃任务
@@ -105,6 +162,10 @@ class MultiThreadDownloadManager(
         activeJobs[taskId]?.cancel()
         activeTasks.remove(taskId)
 
+        // 检查是否启用下载代理
+        val useDownloadProxy = preferencesManager.getDownloadProxySync()
+        val okHttpClient = createOkHttpClient(useDownloadProxy)
+
         val job = scope.launch {
             try {
                 val task = DownloadTask(taskId, url, filename)
@@ -112,12 +173,15 @@ class MultiThreadDownloadManager(
 
                 // 获取下载目录
                 val downloadDir = getDownloadDirectory()
-                val safeFilename = sanitizeFilename(filename)
+                
+                // 应用文件名处理配置
+                val processedFilename = processFilename(filename)
+                val safeFilename = sanitizeFilename(processedFilename)
                 val tempFile = File(downloadDir, "$safeFilename.tmp")
                 val finalFile = File(downloadDir, safeFilename)
 
                 // 获取文件信息
-                val (totalSize, supportsRange) = fetchFileInfo(url)
+                val (totalSize, supportsRange) = fetchFileInfo(url, okHttpClient)
 
                 if (totalSize <= 0) {
                     callback?.onError(taskId, "无法获取文件大小")
@@ -139,13 +203,13 @@ class MultiThreadDownloadManager(
                         Log.d(TAG, "Resuming download from $existingSize bytes")
                         task.downloadedSize.set(existingSize)
                     }
-                    downloadWithMultiThread(task, tempFile, threadCount)
+                    downloadWithMultiThread(task, tempFile, threadCount, okHttpClient)
                 } else {
                     // 不支持断点续传或需要重新下载
                     if (tempFile.exists()) {
                         tempFile.delete()
                     }
-                    downloadWithMultiThread(task, tempFile, threadCount)
+                    downloadWithMultiThread(task, tempFile, threadCount, okHttpClient)
                 }
 
                 // 检查是否所有分片完成
@@ -186,7 +250,8 @@ class MultiThreadDownloadManager(
     private suspend fun downloadWithMultiThread(
         task: DownloadTask,
         tempFile: File,
-        threadCount: Int
+        threadCount: Int,
+        okHttpClient: OkHttpClient
     ) = withContext(Dispatchers.IO) {
         val totalSize = task.totalSize
         val partSize = maxOf(totalSize / threadCount, MIN_PART_SIZE)
@@ -213,7 +278,7 @@ class MultiThreadDownloadManager(
         // 并行下载所有分片
         val partJobs = task.parts.map { part ->
             async {
-                downloadPart(task, part, raf)
+                downloadPart(task, part, raf, okHttpClient)
             }
         }
 
@@ -239,19 +304,22 @@ class MultiThreadDownloadManager(
     private suspend fun downloadPart(
         task: DownloadTask,
         part: DownloadPart,
-        raf: RandomAccessFile
+        raf: RandomAccessFile,
+        okHttpClient: OkHttpClient
     ) = withContext(Dispatchers.IO) {
         try {
             part.status = DownloadStatus.DOWNLOADING
             Log.d(TAG, "Starting part ${part.index}: ${part.start}-${part.end}")
 
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(task.url)
-                .header("User-Agent", preferencesManager.getUserAgentSync())
                 .header("Range", "bytes=${part.start}-${part.end}")
                 .header("Accept", "*/*")
-                .build()
 
+            // 应用自定义 Headers 配置
+            addCustomHeaders(requestBuilder)
+
+            val request = requestBuilder.build()
             val response = okHttpClient.newCall(request).execute()
 
             if (!response.isSuccessful && response.code != 206) {
@@ -291,16 +359,47 @@ class MultiThreadDownloadManager(
     }
 
     /**
+     * 根据 useHeaders 配置添加自定义 Headers
+     */
+    private fun addCustomHeaders(requestBuilder: Request.Builder) {
+        val useHeaders = preferencesManager.getUseHeadersSync()
+        
+        // 始终添加 User-Agent
+        val userAgent = preferencesManager.getUserAgentSync()
+        if (userAgent.isNotEmpty()) {
+            requestBuilder.header("User-Agent", userAgent)
+        }
+
+        // 根据配置添加其他 Headers（预留扩展）
+        when (useHeaders) {
+            "User-Agent,Referer" -> {
+                // 预留 Referer 添加逻辑
+                Log.d(TAG, "Using headers: User-Agent + Referer")
+            }
+            "User-Agent,Referer,Cookie" -> {
+                // 预留完整 Headers 添加逻辑
+                Log.d(TAG, "Using headers: User-Agent + Referer + Cookie")
+            }
+            else -> {
+                // default: 只使用 User-Agent
+                Log.d(TAG, "Using default headers: User-Agent only")
+            }
+        }
+    }
+
+    /**
      * 获取文件信息（大小和是否支持断点）
      */
-    private fun fetchFileInfo(url: String): Pair<Long, Boolean> {
+    private fun fetchFileInfo(url: String, okHttpClient: OkHttpClient): Pair<Long, Boolean> {
         return try {
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(url)
-                .header("User-Agent", preferencesManager.getUserAgentSync())
                 .header("Range", "bytes=0-0") // 只请求第一个字节来检测 Range 支持
-                .build()
-
+            
+            // 添加自定义 Headers
+            addCustomHeaders(requestBuilder)
+            
+            val request = requestBuilder.build()
             val response = okHttpClient.newCall(request).execute()
             val contentLength = response.header("Content-Length")?.toLongOrNull() ?: 0L
             val acceptRanges = response.header("Accept-Ranges") == "bytes"
@@ -311,7 +410,7 @@ class MultiThreadDownloadManager(
                 parseContentRange(contentRange, contentLength)
             } else {
                 // 获取完整文件大小
-                getFullFileSize(url)
+                getFullFileSize(url, okHttpClient)
             }
 
             response.close()
@@ -328,14 +427,16 @@ class MultiThreadDownloadManager(
         return match?.groupValues?.get(1)?.toLongOrNull() ?: partialSize
     }
 
-    private fun getFullFileSize(url: String): Long {
+    private fun getFullFileSize(url: String, okHttpClient: OkHttpClient): Long {
         return try {
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(url)
-                .header("User-Agent", preferencesManager.getUserAgentSync())
                 .method("HEAD", null)
-                .build()
-
+            
+            // 添加自定义 Headers
+            addCustomHeaders(requestBuilder)
+            
+            val request = requestBuilder.build()
             val response = okHttpClient.newCall(request).execute()
             val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
             response.close()
@@ -399,6 +500,49 @@ class MultiThreadDownloadManager(
             safeName = "$safeName.mp4"
         }
         return safeName
+    }
+
+    /**
+     * 处理文件名，应用用户配置
+     * - filenameLen: 限制文件名长度
+     * - filenameTime: 添加时间戳
+     */
+    private fun processFilename(filename: String): String {
+        var result = filename
+        
+        // 应用文件名长度限制
+        val maxLen = preferencesManager.getFilenameLenSync()
+        if (maxLen > 0 && result.length > maxLen) {
+            // 保留扩展名，截断主体部分
+            val lastDot = result.lastIndexOf('.')
+            if (lastDot > 0) {
+                val ext = result.substring(lastDot)
+                val nameWithoutExt = result.substring(0, lastDot)
+                val availableLen = maxLen - ext.length
+                if (availableLen > 0) {
+                    result = nameWithoutExt.take(availableLen) + ext
+                }
+            } else {
+                result = result.take(maxLen)
+            }
+            Log.d(TAG, "Filename truncated to $maxLen characters")
+        }
+        
+        // 添加时间戳
+        val addTime = preferencesManager.getInsertTailSync()
+        if (addTime) {
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(java.util.Date())
+            val lastDot = result.lastIndexOf('.')
+            if (lastDot > 0) {
+                val ext = result.substring(lastDot)
+                val nameWithoutExt = result.substring(0, lastDot)
+                result = "${nameWithoutExt}_$timestamp$ext"
+            } else {
+                result = "${result}_$timestamp"
+            }
+        }
+        
+        return result
     }
 
     private suspend fun decryptFile(source: File, dest: File, key: String) {

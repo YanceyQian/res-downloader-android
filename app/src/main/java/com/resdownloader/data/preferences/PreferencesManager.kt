@@ -17,14 +17,14 @@ class PreferencesManager @Inject constructor(
 ) {
     companion object {
         private const val PREFS_NAME = "settings"
-        
+
         // 设置项 Key
         private const val KEY_LANGUAGE = "lang"
         private const val KEY_DOWNLOAD_PATH = "download_path"
         private const val KEY_PROXY_PORT = "proxy_port"
         private const val KEY_LAST_VERSION = "last_version"
         private const val KEY_CERTIFICATE_INSTALLED = "certificate_installed"
-        
+
         // 新增设置项 Key
         private const val KEY_THEME = "theme"
         private const val KEY_HOST = "host"
@@ -43,6 +43,34 @@ class PreferencesManager @Inject constructor(
         private const val KEY_INSERT_TAIL = "insert_tail"
         private const val KEY_RULE = "rule"
         private const val KEY_MIME_MAP = "mime_map"
+
+        // 默认规则 - 与原项目保持一致
+        const val defaultRule = """*
+*.weixin.qq.com
+*.wechat.com
+*.douyin.com
+*.iesdouyin.com
+*.amemv.com
+*.pstatp.com
+*.kuaishou.com
+*.gifshow.com
+*.xiaohongshu.com
+*.xhscdn.com
+*.bilibili.com
+*.b23.tv
+*.bilivideo.com
+*.kugou.com
+*.kgimg.com
+y.qq.com
+music.qq.com
+*.weishi.qq.com
+v.qq.com
+*.googlevideo.com
+*.youtu.be
+servicewechat.com
+
+# 排除
+!static.qq.com"""
     }
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -333,7 +361,7 @@ class PreferencesManager @Inject constructor(
     
     // UserAgent
     private fun getUserAgent(): String {
-        return prefs.getString(KEY_USER_AGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36") ?: ""
+        return prefs.getString(KEY_USER_AGENT, "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36") ?: ""
     }
 
     fun getUserAgentSync(): String {
@@ -369,20 +397,9 @@ class PreferencesManager @Inject constructor(
     private fun getRule(): String {
         return prefs.getString(KEY_RULE, defaultRule) ?: defaultRule
     }
-    
-    private val defaultRule = """*
-*.qq.com
-video.qq.com
-*.douyin.com
-*.kuaishou.com
-*.xiaohongshu.com
-*.bilibili.com
-*.kugou.com
-y.qq.com
 
-# 排除
-!static.qq.com"""
-    
+    fun getRuleSync(): String = getRule()
+
     suspend fun setRule(rule: String) {
         prefs.edit().putString(KEY_RULE, rule).apply()
         _rule.value = rule
@@ -420,5 +437,30 @@ y.qq.com
     
     fun getMimeMapSync(): Map<String, MimeInfo> {
         return getMimeMap()
+    }
+
+    // 同步获取文件名长度限制
+    fun getFilenameLenSync(): Int {
+        return prefs.getInt(KEY_FILENAME_LEN, 0)
+    }
+
+    // 同步获取使用的 Headers 配置
+    fun getUseHeadersSync(): String {
+        return prefs.getString(KEY_USE_HEADERS, "default") ?: "default"
+    }
+
+    // 同步获取上游代理
+    fun getUpstreamProxySync(): String {
+        return prefs.getString(KEY_UPSTREAM_PROXY, "") ?: ""
+    }
+
+    // 同步获取下载代理开关
+    fun getDownloadProxySync(): Boolean {
+        return prefs.getBoolean(KEY_DOWNLOAD_PROXY, false)
+    }
+
+    // 同步获取自动代理开关
+    fun getAutoProxySync(): Boolean {
+        return prefs.getBoolean(KEY_AUTO_PROXY, false)
     }
 }

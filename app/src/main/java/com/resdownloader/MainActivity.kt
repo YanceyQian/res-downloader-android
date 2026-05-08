@@ -4,9 +4,11 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.net.Uri
 import android.net.VpnService
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -41,6 +43,10 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        private const val TAG = "MainActivity"
+    }
+
     @Inject
     lateinit var languageManager: LanguageManager
 
@@ -64,6 +70,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ResDownloaderApp.applyLang(this)
+
+        // 检查是否启用自动代理
+        checkAutoProxy()
 
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
@@ -105,6 +114,19 @@ class MainActivity : ComponentActivity() {
             action = ProxyVpnService.ACTION_STOP
         }
         startService(intent)
+    }
+
+    /**
+     * 检查是否启用自动代理，如果启用则自动开启抓取
+     */
+    private fun checkAutoProxy() {
+        val prefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
+        val autoProxy = prefs.getBoolean("auto_proxy", false)
+        
+        if (autoProxy && !ProxyVpnService.isRunning) {
+            Log.d(TAG, "Auto-proxy enabled, starting VPN service")
+            requestVpnPermissionAndStart()
+        }
     }
 }
 

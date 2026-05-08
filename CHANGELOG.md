@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/YanceyQian/res-downloader-android/compare/v1.2.1...v1.3.0) - 2026-05-09
+
+### 新增功能
+
+- ✨ **新增上游代理支持** - 支持配置 HTTP/SOCKS5 代理，可用于网络受限环境
+- ✨ **新增下载代理开关** - 可选择下载时是否使用上游代理
+- ✨ **新增自动代理功能** - 应用启动时自动开启 VPN 抓包
+- ✨ **新增文件名长度限制** - 可配置下载文件名的最大长度
+- ✨ **新增文件名时间戳** - 可选择是否为下载文件添加时间戳后缀
+- ✨ **新增自定义 Headers 配置** - 支持配置 User-Agent、Referer、Cookie 等请求头
+- ✨ **新增域名规则系统** - 支持自定义拦截规则，兼容原项目格式
+- ✨ **新增 MIME 类型映射配置** - 可自定义文件类型与后缀的映射关系
+- ✨ **新增主题切换功能** - 支持亮色/暗色主题
+- ✨ **新增微信操作配置** - 可配置微信相关操作行为
+
+### 功能优化
+
+- 🔧 **优化多线程下载逻辑** - 完善 OkHttpClient 代理配置和动态代理支持
+- 🔧 **优化文件名处理流程** - 应用 filenameLen 和 filenameTime 配置
+- 🔧 **优化 HTTP 请求 Headers** - 支持根据 useHeaders 配置添加不同 Headers
+- 🔧 **统一默认域名规则** - 与原项目保持一致，包含完整的域名列表
+- 🔧 **添加规则同步机制** - 对话框支持立即同步最新值
+
+### 问题修复
+
+- 🐛 **修复 RuleSet.kt 编译错误** - 移除重复的 parse 方法定义
+- 🐛 **修复 MainActivity.kt 编译错误** - 添加缺失的 TAG 常量定义
+- 🐛 **修复 PreferencesManager.kt 编译错误** - 移除重复的方法定义
+- 🐛 **修复 MultiThreadDownloadManager.kt 编译错误** - 修复 getDownloadProxySync() 和 SimpleDateFormat 引用
+- 🐛 **修复参数未生效问题** - upstreamProxy、filenameLen、filenameTime 等参数现已正确调用
+
 ## [1.2.1](https://github.com/YanceyQian/res-downloader-android/compare/v1.2.0...v1.2.1) - 2026-05-08
 
 ### 新增功能

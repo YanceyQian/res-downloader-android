@@ -8,6 +8,7 @@ import com.resdownloader.data.model.MimeDefaults
 import com.resdownloader.data.model.MimeInfo
 import com.resdownloader.data.model.VersionInfo
 import com.resdownloader.data.preferences.PreferencesManager
+import com.resdownloader.data.preferences.PreferencesManager.Companion.defaultRule
 import com.resdownloader.data.repository.UpdateRepository
 import com.resdownloader.data.repository.UpdateState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -74,7 +75,7 @@ class SettingsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 3)
 
     val userAgent = preferencesManager.userAgent
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36")
 
     val useHeaders = preferencesManager.useHeaders
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "default")
@@ -86,18 +87,7 @@ class SettingsViewModel @Inject constructor(
         .stateIn(
             viewModelScope, 
             SharingStarted.WhileSubscribed(5000), 
-            """*
-*.qq.com
-video.qq.com
-*.douyin.com
-*.kuaishou.com
-*.xiaohongshu.com
-*.bilibili.com
-*.kugou.com
-y.qq.com
-
-# 排除
-!static.qq.com"""
+            defaultRule
         )
 
     val mimeMap = preferencesManager.mimeMap
@@ -347,19 +337,9 @@ y.qq.com
 
     /**
      * 获取默认域名规则
+     * 使用统一的默认值，与 PreferencesManager 保持一致
      */
-    private fun getDefaultRule(): String = """*
-*.qq.com
-video.qq.com
-*.douyin.com
-*.kuaishou.com
-*.xiaohongshu.com
-*.bilibili.com
-*.kugou.com
-y.qq.com
-
-# 排除
-!static.qq.com"""
+    private fun getDefaultRule(): String = defaultRule
 
     sealed class UiEvent {
         data class Error(val message: String) : UiEvent()

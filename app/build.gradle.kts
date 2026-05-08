@@ -13,8 +13,8 @@ android {
         applicationId = "com.resdownloader"
         minSdk = 24
         targetSdk = 34
-        versionCode = 7
-        versionName = "1.2.1"
+        versionCode = 8
+        versionName = "1.3.0"
         buildConfigField("String", "GITHUB_REPO", "\"YanceyQian/res-downloader-android\"")
         setProperty("archivesBaseName", "ResDownloader-v" + defaultConfig.versionName)
 

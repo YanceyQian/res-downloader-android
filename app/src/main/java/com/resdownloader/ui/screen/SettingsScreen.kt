@@ -122,28 +122,16 @@ fun SettingsScreen(
     var userAgentInput by remember(userAgent) { mutableStateOf(userAgent) }
     var useHeadersInput by remember(useHeaders) { mutableStateOf(useHeaders) }
     
-    // 域名规则输入状态 - 使用更稳定的初始化方式
-    var ruleInput by remember { mutableStateOf("") }
+    // 域名规则输入状态 - 使用 rule 作为 key 确保初始值正确
+    // 添加防御性检查，确保 rule 不为 null 或空
+    var ruleInput by remember(rule) { 
+        mutableStateOf(rule?.takeIf { it.isNotEmpty() } ?: "") 
+    }
     var isRuleDialogOpened by remember { mutableStateOf(false) }
     
-    // 监听 rule 变化，使用 rememberUpdatedState 避免闭包问题
-    val currentRule by rememberUpdatedState(newValue = rule)
-    
-    // 同步 rule 值到 ruleInput
-    LaunchedEffect(rule) {
-        if (!isRuleDialogOpened) {
-            // 对话框未打开时同步值
-            ruleInput = rule
-        }
-    }
-    
-    // 当对话框打开时立即初始化 ruleInput
+    // 当对话框打开时记录状态，对话框关闭时重置
     DisposableEffect(showRuleDialog) {
         isRuleDialogOpened = showRuleDialog
-        if (showRuleDialog) {
-            // 对话框打开时立即设置为最新值
-            ruleInput = currentRule
-        }
         onDispose {
             isRuleDialogOpened = false
         }
@@ -726,9 +714,13 @@ fun SettingsScreen(
             onValueChange = { ruleInput = it },
             onDismiss = { showRuleDialog = false },
             onSave = {
-                scope.launch { viewModel.setRule(ruleInput) }
+                scope.launch { 
+                    viewModel.setRule(ruleInput)
+                    // 通知 ProxyVpnService 更新规则集
+                    com.resdownloader.service.ProxyVpnService.updateRuleSet(ruleInput)
+                    Toast.makeText(context, "规则已保存", Toast.LENGTH_SHORT).show()
+                }
                 showRuleDialog = false
-                Toast.makeText(context, "规则已保存", Toast.LENGTH_SHORT).show()
             }
         )
     }
@@ -789,7 +781,13 @@ fun SettingsScreen(
                 scope.launch {
                     when (type) {
                         ResetType.ALL -> viewModel.resetAllSettings()
-                        ResetType.RULE -> viewModel.resetRule()
+                        ResetType.RULE -> {
+                            viewModel.resetRule()
+                            // 重置后通知 ProxyVpnService 更新规则集
+                            com.resdownloader.service.ProxyVpnService.updateRuleSet(
+                                com.resdownloader.data.preferences.PreferencesManager.defaultRule
+                            )
+                        }
                         ResetType.MIME -> viewModel.resetMimeMap()
                         ResetType.PROXY -> viewModel.resetProxySettings()
                     }
@@ -1279,6 +1277,9 @@ private fun RuleEditorDialog(
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
+    // 防御性检查：确保 value 不为 null
+    val safeValue = value ?: ""
+    
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.domain_rule)) },
@@ -1293,8 +1294,10 @@ private fun RuleEditorDialog(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
-                    value = value,
-                    onValueChange = onValueChange,
+                    value = safeValue,
+                    onValueChange = { newValue -> 
+                        onValueChange(newValue ?: "")
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 6,
                     maxLines = 10,

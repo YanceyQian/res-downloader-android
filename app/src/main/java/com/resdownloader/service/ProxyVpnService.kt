@@ -14,7 +14,10 @@ import com.resdownloader.R
 import com.resdownloader.data.model.Platform
 import com.resdownloader.data.model.ResourceInfo
 import com.resdownloader.data.model.ResourceType
+import com.resdownloader.data.model.RuleSet
+import com.resdownloader.data.preferences.PreferencesManager
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -37,6 +40,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 @AndroidEntryPoint
 class ProxyVpnService : VpnService() {
 
+    @Inject
+    lateinit var preferencesManager: PreferencesManager
+
     companion object {
         const val TAG = "ProxyVpnService"
         const val CHANNEL_ID = "proxy_service_channel"
@@ -48,6 +54,10 @@ class ProxyVpnService : VpnService() {
         private var packetCountValue = 0L
         private var byteCountValue = 0L
         private val resourcesValue = mutableListOf<ResourceInfo>()
+
+        // 规则集实例 - 动态更新
+        @Volatile
+        private var ruleSet: RuleSet? = null
 
         val isRunning: Boolean get() = isRunningValue
         
@@ -86,28 +96,33 @@ class ProxyVpnService : VpnService() {
             }
         }
 
-        // 视频号相关域名
-        private val wechatDomains = listOf(
-            "weixin.qq.com",
-            "wechat.com",
-            "wxtingyun.com",
-            "mp.weixin.qq.com",
-            "res.wx.qq.com",
-            "szshort.biz.wechat.com",
-            "shoujiweservice.qq.com"
-        )
+        /**
+         * 更新规则集
+         * 当用户在设置中修改规则时调用此方法
+         */
+        fun updateRuleSet(ruleString: String) {
+            ruleSet = RuleSet.parse(ruleString)
+            Log.d(TAG, "RuleSet updated")
+        }
 
-        // 其他支持的平台域名
-        private val supportedPlatforms = mapOf(
-            "bilibili" to listOf("bilibili.com", "biliintl.com", "b23.tv"),
-            "douyin" to listOf("douyin.com", "iesdouyin.com", "amemv.com"),
-            "kuaishou" to listOf("kuaishou.com", "kspkg.com", "kuaishoupay.com"),
-            "xiaohongshu" to listOf("xiaohongshu.com", "xhslink.com"),
+        /**
+         * 获取当前规则集
+         */
+        fun getRuleSet(): RuleSet? = ruleSet
+
+        // 平台检测域名映射 - 用于检测平台类型（不影响规则判断）
+        private val platformDomains = mapOf(
+            "wechat" to listOf("weixin.qq.com", "wechat.com", "wxtingyun.com"),
+            "bilibili" to listOf("bilibili.com", "biliintl.com", "b23.tv", "bilivideo.com"),
+            "douyin" to listOf("douyin.com", "iesdouyin.com", "amemv.com", "pstatp.com"),
+            "kuaishou" to listOf("kuaishou.com", "kspkg.com", "kuaishoupay.com", "gifshow.com"),
+            "xiaohongshu" to listOf("xiaohongshu.com", "xhslink.com", "xhscdn.com"),
             "kugou" to listOf("kugou.com", "kgimg.com"),
             "qqmusic" to listOf("y.qq.com", "music.qq.com", "imgcache.qq.com"),
             "netease" to listOf("music.163.com", "126.net"),
             "weibo" to listOf("weibo.com", "sinaimg.cn", "weibocdn.com"),
-            "zhihu" to listOf("zhihu.com", "zimg.cn")
+            "google" to listOf("googlevideo.com", "youtu.be"),
+            "qqvideo" to listOf("v.qq.com", "weishi.qq.com")
         )
 
         // 媒体文件扩展名
@@ -168,6 +183,11 @@ class ProxyVpnService : VpnService() {
         serviceScope.launch {
             try {
                 Log.d(TAG, "Starting VPN service")
+
+                // 初始化规则集 - 从 PreferencesManager 读取用户配置的规则
+                val ruleString = preferencesManager.getRuleSync()
+                updateRuleSet(ruleString)
+                Log.d(TAG, "RuleSet initialized")
 
                 val builder = Builder()
                     .setSession("ResDownloader")
@@ -389,23 +409,26 @@ class ProxyVpnService : VpnService() {
 
     /**
      * 检测平台类型
+     * 使用规则集判断是否需要拦截
      */
     private fun detectPlatform(host: String): String {
+        // 首先检查规则集 - 如果不在规则中，直接返回 other
+        val currentRuleSet = ruleSet
+        if (currentRuleSet == null || !currentRuleSet.shouldMitm(host)) {
+            return "other"
+        }
+
         val lowerHost = host.lowercase()
         
-        // 微信/视频号
-        if (wechatDomains.any { lowerHost.contains(it) }) {
-            return "wechat"
-        }
-        
-        // 其他平台
-        for ((platform, domains) in supportedPlatforms) {
+        // 检测支持的平台（用于分类显示）
+        for ((platform, domains) in platformDomains) {
             if (domains.any { lowerHost.contains(it) }) {
                 return platform
             }
         }
         
-        return "other"
+        // 如果匹配规则但不在已知平台中，返回 "custom"
+        return "custom"
     }
 
     /**

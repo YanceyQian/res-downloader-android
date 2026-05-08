@@ -131,14 +131,14 @@
     <string name="download_proxy_tip">下载操作时是否使用上游代理</string>
     <string name="user_agent_tip">如不清楚请保持默认</string>
     <string name="connections">连接数</string>
-    <string name="connections_tip">如不清楚请保持默认，通常CPU核心数×2，用于加速下载</string>
+    <string name="connections_tip">如不清楚请保持默认，移动端建议2-4，用于节省电量</string>
     <string name="down_number">下载数</string>
     <string name="down_number_tip">同时进行的下载数量</string>
     <string name="use_headers_tip">默认系统过滤，定义下载时可使用的header参数，逗号分割</string>
     <string name="mime_map">拦截规则</string>
     <string name="mime_map_tip">json格式，如果不清楚保持默认就行，修改后请重启软件</string>
     <string name="domain_rule">域名规则</string>
-    <string name="domain_rule_tip">默认*匹配所有域，每个规则一行，支持如下:</string>
+    <string name="domain_rule_tip">默认*匹配所有域，每个规则一行，支持如下:\n# 抖音/头条系\n*.douyin.com\n*.iesdouyin.com\n*.amemv.com\n\n# 快手系\n*.kuaishou.com\n*.kspkg.com\n\n# 小红书\n*.xiaohongshu.com\n*.xhslink.com\n\n# 微信/视频号\nweixin.qq.com\n*.wechat.com\nservicewechat.com\n\n# QQ音乐\ny.qq.com\nmusic.qq.com\n\n# 酷狗\n*.kugou.com\n*.kgimg.com\n\n# 其他常见平台\n*.bilibili.com\n*.googlevideo.com\nv.qq.com\n*.weishi.qq.com\n\n# 排除（使用!开头）\n!static.qq.com</string>
     <string name="mime_type_rule">拦截类型</string>
     <string name="mime_type_rule_tip">设置需要拦截的文件类型，如视频、音频、图片等</string>
     <string name="port_format_error">port 格式错误</string>

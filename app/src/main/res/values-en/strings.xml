@@ -130,14 +130,14 @@
     <string name="download_proxy_tip">Whether to use upstream proxy for download</string>
     <string name="user_agent_tip">Keep default if not clear</string>
     <string name="connections">Connections</string>
-    <string name="connections_tip">Keep default if not clear, usually CPU cores × 2, for accelerating download</string>
+    <string name="connections_tip">Keep default if not clear, recommend 2-4 for mobile to save battery</string>
     <string name="down_number">Downloads</string>
     <string name="down_number_tip">Number of simultaneous downloads</string>
     <string name="use_headers_tip">Default system filtering, define header parameters available for download, comma separated</string>
     <string name="mime_map">Intercept Rules</string>
     <string name="mime_map_tip">JSON format, keep default if not clear. Please restart app after changing</string>
     <string name="domain_rule">Domain Rules</string>
-    <string name="domain_rule_tip">Default * matches all domains, one rule per line, supports:\n*.qq.com\nvideo.qq.com\nexample.com\n\n# Exclude\n!static.qq.com</string>
+    <string name="domain_rule_tip">Default * matches all domains, one rule per line, supports:\n# Douyin/TikTok Family\n*.douyin.com\n*.iesdouyin.com\n*.amemv.com\n\n# Kuaishou\n*.kuaishou.com\n*.kspkg.com\n\n# Xiaohongshu (RED)\n*.xiaohongshu.com\n*.xhslink.com\n\n# WeChat/Channels\nweixin.qq.com\n*.wechat.com\nservicewechat.com\n\n# QQ Music\ny.qq.com\nmusic.qq.com\n\n# Kugou\n*.kugou.com\n*.kgimg.com\n\n# Other Platforms\n*.bilibili.com\n*.googlevideo.com\nv.qq.com\n*.weishi.qq.com\n\n# Exclude (use ! prefix)\n!static.qq.com</string>
     <string name="mime_type_rule">Intercept Types</string>
     <string name="mime_type_rule_tip">Configure which file types to intercept, such as video, audio, images, etc.</string>
     <string name="port_format_error">Port format error</string>
