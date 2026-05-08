@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1](https://github.com/YanceyQian/res-downloader-android/compare/v1.1.0...v1.1.1) - 2026-05-08
+
+### 功能优化
+
+- 🔧 优化手动输入链接对话框，添加功能说明区分"手动输入"和"代理抓取"两种方式
+- 🔧 添加 B站视频需使用代理抓取的提示说明
+
+### 问题修复
+
+- 🐛 修复域名规则点击闪退问题
+
 ## [1.1.0](https://github.com/YanceyQian/res-downloader-android/compare/v1.0.1...v1.1.0) - 2026-05-08
 
 ### 新增功能

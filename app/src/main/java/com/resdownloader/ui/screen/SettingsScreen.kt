@@ -1200,16 +1200,12 @@ private fun RuleEditorDialog(
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
-    val scrollState = rememberScrollState()
-    
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.domain_rule)) },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(scrollState)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = "设置需要抓取的域名规则：\n• 使用 * 匹配所有子域名（例如 *.douyin.com）\n• 每行一个规则\n• 使用 ! 开头表示排除（例如 !static.douyin.com）",
@@ -1228,13 +1224,7 @@ private fun RuleEditorDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                try {
-                    onSave()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }) {
+            TextButton(onClick = onSave) {
                 Text(stringResource(R.string.confirm))
             }
         },
@@ -1257,6 +1247,7 @@ private fun CertificateInstallDialog(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isDownloading by remember { mutableStateOf(false) }
+    var certFile by remember { mutableStateOf<File?>(null) }
     
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1284,14 +1275,14 @@ private fun CertificateInstallDialog(
                         .clickable(enabled = !isDownloading) {
                             isDownloading = true
                             scope.launch {
-                                val certFile = downloadCertificate(context)
-                                if (certFile != null) {
+                                val file = downloadCertificate(context)
+                                if (file != null) {
+                                    certFile = file
                                     Toast.makeText(
                                         context,
-                                        "证书已下载: ${certFile.absolutePath}",
-                                        Toast.LENGTH_LONG
+                                        "证书已下载成功",
+                                        Toast.LENGTH_SHORT
                                     ).show()
-                                    openCertificateFile(context, certFile)
                                 } else {
                                     Toast.makeText(
                                         context,
@@ -1318,27 +1309,65 @@ private fun CertificateInstallDialog(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = if (isDownloading) "下载中..." else "直接下载证书",
+                                text = if (isDownloading) "下载中..." else if (certFile != null) "证书已下载" else "下载证书文件",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Text(
-                                text = "点击下载证书并自动打开安装",
+                                text = "点击下载证书到本地",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
-                        }
-                        if (!isDownloading) {
-                            Icon(
-                                imageVector = Icons.Default.OpenInNew,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
                     }
                 }
                 
                 Spacer(modifier = Modifier.height(8.dp))
+                
+                // 打开设置安装证书
+                if (certFile != null) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                openCertificateSettings(context, certFile!!)
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "打开设置安装证书",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                                Text(
+                                    text = "跳转到系统设置页面安装证书",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.OpenInNew,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
                 
                 // 百度网盘下载（备用）
                 Card(
@@ -1843,9 +1872,17 @@ private suspend fun downloadCertificate(context: Context): File? {
             // 从 raw 资源读取证书
             val inputStream = context.resources.openRawResource(R.raw.res_downloader_public)
             
-            // 获取下载目录
-            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            val certFile = File(downloadsDir, "res-downloader-public.crt")
+            // 先尝试应用私有目录，更可靠
+            val certFile = try {
+                // 优先使用应用私有下载目录
+                val appDownloadDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                    ?: File(context.filesDir, "downloads").apply { mkdirs() }
+                File(appDownloadDir, "res-downloader-public.crt")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to use app dir, trying cache dir", e)
+                // 如果失败，使用缓存目录
+                File(context.cacheDir, "res-downloader-public.crt")
+            }
             
             // 写入文件
             val outputStream = FileOutputStream(certFile)
@@ -1884,6 +1921,52 @@ private fun openCertificateFile(context: Context, file: File) {
     } catch (e: Exception) {
         Log.e(TAG, "Failed to open certificate", e)
         Toast.makeText(context, "无法打开证书文件: ${e.message}", Toast.LENGTH_LONG).show()
+    }
+}
+
+/**
+ * 打开系统设置页面安装证书
+ */
+private fun openCertificateSettings(context: Context, certFile: File) {
+    try {
+        // 首先复制证书到 Downloads 目录，方便用户在文件管理器中找到
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val destFile = File(downloadsDir, "res-downloader-public.crt")
+        
+        try {
+            certFile.inputStream().use { input ->
+                destFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            Toast.makeText(context, "证书已复制到下载目录: ${destFile.name}", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to copy to downloads dir", e)
+        }
+        
+        // 尝试打开系统安全设置页面
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            // Android 7.0+ 需要用户手动到设置中安装
+            Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        } else {
+            // Android 6.0 及以下
+            Intent(Settings.ACTION_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        }
+        
+        context.startActivity(intent)
+        
+        Toast.makeText(
+            context,
+            "请在设置中找到「加密与凭据」→「从存储设备安装证书」",
+            Toast.LENGTH_LONG
+        ).show()
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to open certificate settings", e)
+        Toast.makeText(context, "无法打开设置: ${e.message}", Toast.LENGTH_LONG).show()
     }
 }
 

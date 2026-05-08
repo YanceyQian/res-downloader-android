@@ -74,6 +74,16 @@
     <string name="use_data">Please select data</string>
     <string name="import_placeholder">When adding multiple, please ensure only one per line (each URL on a new line)</string>
     <string name="import_empty">Please enter data to import</string>
+    <string name="manual_input_title">Manual Input</string>
+    <string name="manual_input_description">For direct links (e.g., .mp4, .mp3, .jpg file links)</string>
+    <string name="manual_input_vs_proxy">Manual Input vs Proxy Capture</string>
+    <string name="manual_input_tip_direct">Direct Download: For direct links</string>
+    <string name="manual_input_tip_proxy">Proxy Capture: For platform resources</string>
+    <string name="manual_input_direct_title">Manual Input Link</string>
+    <string name="manual_input_direct_desc">Paste direct media links (e.g., https://example.com/video.mp4) for direct download</string>
+    <string name="manual_input_proxy_title">Proxy Capture (Recommended)</string>
+    <string name="manual_input_proxy_desc">Enable proxy to auto-capture: Bilibili, Netease Music, QQ Music, Mini Programs, etc.</string>
+    <string name="manual_input_bilibili_note">Bilibili videos require proxy capture. Play page links cannot be downloaded directly.</string>
 
     <!-- Download -->
     <string name="download">Download</string>

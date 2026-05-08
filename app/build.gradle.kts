@@ -13,9 +13,10 @@ android {
         applicationId = "com.resdownloader"
         minSdk = 24
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.1.0"
+        versionCode = 4
+        versionName = "1.1.1"
         buildConfigField("String", "GITHUB_REPO", "\"YanceyQian/res-downloader-android\"")
+        setProperty("archivesBaseName", "ResDownloader-v" + defaultConfig.versionName)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -23,28 +24,18 @@ android {
         }
     }
 
-    // 签名配置（release构建类型使用）
-    signingConfigs {
-        create("release") {
-            // 密钥文件路径：项目根目录下的 res-downloader.keystore
-            storeFile = file("${project.rootDir}/res-downloader.keystore")
-            storePassword = "ResDown2026!"
-            keyAlias = "resdownloader"
-            keyPassword = "ResDown2026!"
-        }
-    }
-
     buildTypes {
         release {
             isMinifyEnabled = true
-            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "VERSION_NAME", "\"${defaultConfig.versionName}\"")
         }
         debug {
             isMinifyEnabled = false
+            buildConfigField("String", "VERSION_NAME", "\"${defaultConfig.versionName}\"")
         }
     }
 

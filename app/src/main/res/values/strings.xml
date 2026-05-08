@@ -75,6 +75,16 @@
     <string name="use_data">请选择需要的数据</string>
     <string name="import_placeholder">添加多个时，请确保每行只有一个(每个链接回车换行)</string>
     <string name="import_empty">请输入需要导入的数据</string>
+    <string name="manual_input_title">手动输入链接</string>
+    <string name="manual_input_description">适用于直链资源（如 .mp4、.mp3、.jpg 等文件链接）</string>
+    <string name="manual_input_vs_proxy">手动输入 vs 代理抓取</string>
+    <string name="manual_input_tip_direct">直接下载：支持直链资源</string>
+    <string name="manual_input_tip_proxy">代理抓取：支持平台资源</string>
+    <string name="manual_input_direct_title">手动输入链接</string>
+    <string name="manual_input_direct_desc">粘贴媒体直链（如 https://example.com/video.mp4）可直接下载</string>
+    <string name="manual_input_proxy_title">代理抓取（推荐）</string>
+    <string name="manual_input_proxy_desc">开启代理后，自动捕获：B站视频、网易云/QQ音乐、小程序等加密资源</string>
+    <string name="manual_input_bilibili_note">B站视频需使用代理抓取，播放页面链接无法直接下载</string>
 
     <!-- Download -->
     <string name="download">下载</string>

@@ -760,25 +760,140 @@ fun ResourceCard(
 @Composable
 fun AddUrlDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
+    onOpenProxy: () -> Unit = {}
 ) {
     var url by remember { mutableStateOf("") }
+    var showTip by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.batch_import)) },
+        title = { 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(stringResource(R.string.manual_input_title))
+                TextButton(onClick = { showTip = !showTip }) {
+                    Text(
+                        text = if (showTip) "收起说明" else "查看说明",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+        },
         text = {
             Column {
-                Text(
-                    text = stringResource(R.string.import_placeholder),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+                // 功能说明区域
+                if (showTip) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            // 手动输入说明
+                            Row(
+                                verticalAlignment = Alignment.Top,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    Icons.Default.Link,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.manual_input_direct_title),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.manual_input_direct_desc),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Divider()
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // 代理抓取说明
+                            Row(
+                                verticalAlignment = Alignment.Top,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    Icons.Default.WifiTethering,
+                                    contentDescription = null,
+                                    tint = Color(0xFF4CAF50),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.manual_input_proxy_title),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.manual_input_proxy_desc),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // B站提示
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFFFE0B2)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = Color(0xFFE65100),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = stringResource(R.string.manual_input_bilibili_note),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFFBF360C)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                // 输入框
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
                     label = { Text(stringResource(R.string.import_placeholder)) },
+                    placeholder = { 
+                        Text(
+                            text = "https://example.com/video.mp4",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     maxLines = 6

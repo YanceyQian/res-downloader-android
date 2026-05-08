@@ -2,6 +2,7 @@ package com.resdownloader.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.resdownloader.BuildConfig
 import com.resdownloader.data.model.AssetInfo
 import com.resdownloader.data.model.MimeInfo
 import com.resdownloader.data.model.VersionInfo
@@ -19,9 +20,7 @@ class SettingsViewModel @Inject constructor(
     private val updateRepository: UpdateRepository
 ) : ViewModel() {
 
-    companion object {
-        private const val CURRENT_VERSION = "1.0.0"
-    }
+
 
     // 基础设置
     val downloadPath = preferencesManager.downloadPath
@@ -94,7 +93,7 @@ class SettingsViewModel @Inject constructor(
     val latestVersion = updateRepository.latestVersion
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val currentVersion = CURRENT_VERSION
+    val currentVersion = BuildConfig.VERSION_NAME
 
     private val _uiEvent = MutableSharedFlow<UiEvent>()
     val uiEvent: SharedFlow<UiEvent> = _uiEvent.asSharedFlow()
