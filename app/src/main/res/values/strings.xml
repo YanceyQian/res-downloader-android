@@ -141,13 +141,6 @@
     <string name="domain_rule_tip">默认*匹配所有域，每个规则一行，支持如下:</string>
     <string name="mime_type_rule">拦截类型</string>
     <string name="mime_type_rule_tip">设置需要拦截的文件类型，如视频、音频、图片等</string>
-
-*.qq.com
-video.qq.com
-example.com
-
-# 排除
-!static.qq.com</string>
     <string name="port_format_error">port 格式错误</string>
     <string name="host_format_error">host 格式错误</string>
     <string name="theme">主题</string>
