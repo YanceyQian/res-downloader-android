@@ -103,6 +103,7 @@
     <string name="network">Network</string>
     <string name="system">System</string>
     <string name="about_section">About</string>
+    <string name="reset_settings">Reset to Default</string>
     <string name="download_path">Download Path</string>
     <string name="proxy_port">Proxy Port</string>
     <string name="language">Language</string>
@@ -137,6 +138,8 @@
     <string name="mime_map_tip">JSON format, keep default if not clear. Please restart app after changing</string>
     <string name="domain_rule">Domain Rules</string>
     <string name="domain_rule_tip">Default * matches all domains, one rule per line, supports:\n*.qq.com\nvideo.qq.com\nexample.com\n\n# Exclude\n!static.qq.com</string>
+    <string name="mime_type_rule">Intercept Types</string>
+    <string name="mime_type_rule_tip">Configure which file types to intercept, such as video, audio, images, etc.</string>
     <string name="port_format_error">Port format error</string>
     <string name="host_format_error">Host format error</string>
     <string name="theme">Theme</string>

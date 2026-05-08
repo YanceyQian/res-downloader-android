@@ -1,0 +1,103 @@
+Executing tasks: [:app:assembleRelease] in project E:\res-download\res-downloader-android
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :app:mergeReleaseNativeLibs NO-SOURCE
+> Task :app:stripReleaseDebugSymbols NO-SOURCE
+> Task :app:extractReleaseNativeSymbolTables NO-SOURCE
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
+> Task :app:mergeReleaseArtProfile UP-TO-DATE
+> Task :app:buildKotlinToolingMetadata UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateReleaseBuildConfig
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :app:processReleaseNavigationResources UP-TO-DATE
+> Task :app:compileReleaseNavigationResources UP-TO-DATE
+> Task :app:generateReleaseResValues UP-TO-DATE
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :app:generateReleaseResources UP-TO-DATE
+> Task :app:mergeReleaseResources UP-TO-DATE
+> Task :app:packageReleaseResources UP-TO-DATE
+> Task :app:parseReleaseLocalResources UP-TO-DATE
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:mergeReleaseStartupProfile UP-TO-DATE
+> Task :app:mergeReleaseShaders UP-TO-DATE
+> Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets UP-TO-DATE
+> Task :app:compressReleaseAssets UP-TO-DATE
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:collectReleaseDependencies UP-TO-DATE
+> Task :app:sdkReleaseDependencyData UP-TO-DATE
+> Task :app:validateSigningRelease
+> Task :app:writeReleaseAppMetadata UP-TO-DATE
+> Task :app:writeReleaseSigningConfigVersions UP-TO-DATE
+> Task :app:processReleaseManifestForPackage
+> Task :app:processReleaseResources
+> Task :app:optimizeReleaseResources
+> Task :app:kspReleaseKotlin
+> Task :app:compileReleaseKotlin
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/MainActivity.kt:140:9 Variable 'theme' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/data/repository/UpdateRepository.kt:127:41 Unchecked cast: Any? to List<Map<String, Any>>
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/network/M3u8Downloader.kt:211:43 Unsafe use of a nullable receiver of type String?
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/network/M3u8Downloader.kt:215:40 Type mismatch: inferred type is String? but String was expected
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/network/M3u8Downloader.kt:264:35 Variable 'currentUrl' initializer is redundant
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/network/M3u8Downloader.kt:271:44 Unsafe use of a nullable receiver of type String?
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/network/M3u8Downloader.kt:275:39 Type mismatch: inferred type is String? but String was expected
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/network/M3u8Downloader.kt:287:21 The value 'null' assigned to 'var currentUrl: String? defined in com.resdownloader.network.M3u8Downloader.parseMasterPlaylist' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/network/ProxyServer.kt:119:9 Parameter 'clientSocket' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/network/ProxyServer.kt:162:9 Parameter 'clientSocket' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/network/ProxyServer.kt:344:60 Parameter 'headers' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/network/ResourceFetcher.kt:122:50 Parameter 'baseUrl' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/service/DownloadService.kt:115:38 Parameter 'context' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/service/DownloadService.kt:271:90 Parameter 'quality' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/service/DownloadService.kt:499:36 Parameter 'taskId' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/service/ProxyVpnService.kt:259:41 Variable 'srcIp' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/service/ProxyVpnService.kt:303:47 Parameter 'destIp' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/service/ProxyVpnService.kt:303:63 Parameter 'destPort' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/service/ProxyVpnService.kt:378:51 Parameter 'port' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/service/ProxyVpnService.kt:378:62 Parameter 'protocol' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/ui/screen/MainScreen.kt:764:5 Parameter 'onOpenProxy' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/ui/screen/SettingsScreen.kt:119:9 Variable 'useHeadersInput' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/ui/screen/SettingsScreen.kt:561:26 Name shadowed: quality
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/ui/screen/SettingsScreen.kt:1244:5 Parameter 'onInstall' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/util/VideoDecryptor.kt:244:17 Variable 'keySize' is assigned but never accessed
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/util/VideoDecryptor.kt:250:21 The value '256' assigned to 'val keySize: Int defined in com.resdownloader.util.VideoDecryptor.decryptAesCbc' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/util/VideoDecryptor.kt:255:21 The value '128' assigned to 'val keySize: Int defined in com.resdownloader.util.VideoDecryptor.decryptAesCbc' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/util/VideoDecryptor.kt:261:21 The value '128' assigned to 'val keySize: Int defined in com.resdownloader.util.VideoDecryptor.decryptAesCbc' is never used
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/util/WechatVideoDownloader.kt:125:36 Type mismatch: inferred type is String? but String was expected
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/util/WechatVideoDownloader.kt:239:56 Type mismatch: inferred type is Nothing? but String was expected
+w: file:///E:/res-download/res-downloader-android/app/src/main/java/com/resdownloader/util/WechatVideoDownloader.kt:495:36 'create(MediaType?, String): RequestBody' is deprecated. Moved to extension function. Put the 'content' argument first to fix Java
+
+> Task :app:compileReleaseKotlin FAILED
+
+[Incubating] Problems report is available at: file:///E:/res-download/res-downloader-android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin'.
+> Cannot access output property 'destinationDirectory' of task ':app:compileReleaseKotlin'. Accessing unreadable inputs or outputs is not supported. Declare the task as untracked by using Task.doNotTrackState(). For more information, please refer to https://docs.gradle.org/8.13/userguide/incremental_build.html#sec:disable-state-tracking in the Gradle documentation.
+   > java.io.IOException: Cannot snapshot E:\res-download\res-downloader-android\app\build\tmp\kotlin-classes\release\com\resdownloader\ui\screen\SettingsScreenKt$SettingsScreen$5$1$18$1$1.class: not a regular file
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.13/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 59s
+36 actionable tasks: 12 executed, 24 up-to-date

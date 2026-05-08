@@ -1,5 +1,7 @@
 package com.resdownloader.data.repository
 
+import android.content.Context
+import com.resdownloader.BuildConfig
 import com.resdownloader.data.model.AssetInfo
 import com.resdownloader.data.model.VersionInfo
 import com.squareup.moshi.Moshi
@@ -11,16 +13,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class UpdateRepository @Inject constructor(
     private val okHttpClient: OkHttpClient,
-    private val moshi: Moshi
+    private val moshi: Moshi,
+    private val context: Context
 ) {
     companion object {
-        private const val CURRENT_VERSION = "1.0.0"
+        private val CURRENT_VERSION: String get() = BuildConfig.VERSION_NAME
         private const val GITHUB_RELEASES_API = "https://api.github.com/repos/YanceyQian/res-downloader-android/releases/latest"
         private const val GITHUB_REPO = "https://github.com/YanceyQian/res-downloader-android"
     }
@@ -84,10 +88,9 @@ class UpdateRepository @Inject constructor(
             val totalBytes = body.contentLength()
             var downloadedBytes = 0L
 
-            val cacheDir = java.io.File("/data/data/com.resdownloader/cache")
-            if (!cacheDir.exists()) cacheDir.mkdirs()
-
-            val apkFile = java.io.File(cacheDir, "update.apk")
+            // 使用应用缓存目录，兼容非Root设备
+            val cacheDir = context.cacheDir
+            val apkFile = File(cacheDir, "update.apk")
 
             body.byteStream().use { input ->
                 apkFile.outputStream().use { output ->

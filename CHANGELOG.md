@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1](https://github.com/YanceyQian/res-downloader-android/compare/v1.2.0...v1.2.1) - 2026-05-08
+
+### 新增功能
+
+- ✨ **新增 MIME 类型拦截规则配置界面** - 与原项目一致的 JSON 编辑器，支持编辑模式和预览模式切换
+- ✨ **新增恢复默认设置功能** - 提供快速恢复所有设置或单项设置的选项，防止误操作导致软件不可用
+
+### 功能优化
+
+- 🔧 **优化域名规则设置** - 修复对话框打开时的初始化时序问题，防止闪退
+- 🔧 **统一默认域名规则** - 与 PreferencesManager 保持一致，包含完整的域名列表
+- 🔧 域名规则对话框支持立即同步最新值，避免状态不一致
+
+### 问题修复
+
+- 🐛 **修复域名规则点击闪退问题** - 使用 DisposableEffect 确保对话框打开时立即初始化 ruleInput
+- 🐛 修复 ruleInput 异步初始化导致的时序问题
+
 ## [1.2.0](https://github.com/YanceyQian/res-downloader-android/compare/v1.1.1...v1.2.0) - 2026-05-08
 
 ### 新增功能

@@ -38,6 +38,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.core.content.getSystemService
 import com.resdownloader.R
@@ -103,9 +104,11 @@ fun SettingsScreen(
     var showUserAgentDialog by remember { mutableStateOf(false) }
     var showUseHeadersDialog by remember { mutableStateOf(false) }
     var showRuleDialog by remember { mutableStateOf(false) }
+    var showMimeTypeDialog by remember { mutableStateOf(false) }
     var showCertificateDialog by remember { mutableStateOf(false) }
     var showUpdateDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var showResetDialog by remember { mutableStateOf(false) }
     var isDownloadingUpdate by remember { mutableStateOf(false) }
 
     // 输入状态
@@ -117,7 +120,33 @@ fun SettingsScreen(
     var downNumberInput by remember(downNumber) { mutableStateOf(downNumber.toString()) }
     var userAgentInput by remember(userAgent) { mutableStateOf(userAgent) }
     var useHeadersInput by remember(useHeaders) { mutableStateOf(useHeaders) }
-    var ruleInput by remember(rule) { mutableStateOf(rule) }
+    
+    // 域名规则输入状态 - 使用更稳定的初始化方式
+    var ruleInput by remember { mutableStateOf("") }
+    var isRuleDialogOpened by remember { mutableStateOf(false) }
+    
+    // 监听 rule 变化，使用 rememberUpdatedState 避免闭包问题
+    val currentRule by rememberUpdatedState(newValue = rule)
+    
+    // 同步 rule 值到 ruleInput
+    LaunchedEffect(rule) {
+        if (!isRuleDialogOpened) {
+            // 对话框未打开时同步值
+            ruleInput = rule
+        }
+    }
+    
+    // 当对话框打开时立即初始化 ruleInput
+    DisposableEffect(showRuleDialog) {
+        isRuleDialogOpened = showRuleDialog
+        if (showRuleDialog) {
+            // 对话框打开时立即设置为最新值
+            ruleInput = currentRule
+        }
+        onDispose {
+            isRuleDialogOpened = false
+        }
+    }
 
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -413,6 +442,17 @@ fun SettingsScreen(
                 )
             }
 
+            // MIME类型规则（拦截类型）
+            item {
+                SettingsClickableItem(
+                    icon = Icons.Outlined.Category,
+                    title = stringResource(R.string.mime_type_rule),
+                    subtitle = "配置拦截资源类型",
+                    onClick = { showMimeTypeDialog = true },
+                    helpText = "设置需要拦截的文件类型，如视频、音频、图片等"
+                )
+            }
+
             // 证书安装
             item {
                 SettingsClickableItem(
@@ -455,6 +495,17 @@ fun SettingsScreen(
                         }
                     },
                     isLoading = isDownloadingUpdate
+                )
+            }
+
+            // 恢复默认设置
+            item {
+                SettingsClickableItem(
+                    icon = Icons.Outlined.Restore,
+                    title = stringResource(R.string.reset_settings),
+                    subtitle = "恢复所有设置到默认值",
+                    onClick = { showResetDialog = true },
+                    helpText = "如果误修改设置导致软件异常，点击恢复"
                 )
             }
 
@@ -681,6 +732,13 @@ fun SettingsScreen(
         )
     }
 
+    // MIME类型规则（拦截类型）
+    if (showMimeTypeDialog) {
+        MimeTypeConfigDialog(
+            onDismiss = { showMimeTypeDialog = false }
+        )
+    }
+
     // 证书安装
     if (showCertificateDialog) {
         CertificateInstallDialog(
@@ -718,6 +776,25 @@ fun SettingsScreen(
         AboutDialog(
             version = viewModel.currentVersion,
             onDismiss = { showAboutDialog = false }
+        )
+    }
+
+    // 恢复默认设置对话框
+    if (showResetDialog) {
+        ResetSettingsDialog(
+            onDismiss = { showResetDialog = false },
+            onReset = { type ->
+                scope.launch {
+                    when (type) {
+                        ResetType.ALL -> viewModel.resetAllSettings()
+                        ResetType.RULE -> viewModel.resetRule()
+                        ResetType.MIME -> viewModel.resetMimeMap()
+                        ResetType.PROXY -> viewModel.resetProxySettings()
+                    }
+                    Toast.makeText(context, "已恢复默认设置", Toast.LENGTH_SHORT).show()
+                }
+                showResetDialog = false
+            }
         )
     }
 }
@@ -1226,6 +1303,222 @@ private fun RuleEditorDialog(
         confirmButton = {
             TextButton(onClick = onSave) {
                 Text(stringResource(R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+// ==================== MIME类型规则配置对话框 ====================
+
+@Composable
+private fun MimeTypeConfigDialog(
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    
+    // 当前MIME映射
+    val mimeMap = viewModel.mimeMap.collectAsState()
+    var jsonText by remember { mutableStateOf("") }
+    var jsonError by remember { mutableStateOf<String?>(null) }
+    var isEditMode by remember { mutableStateOf(false) }
+    
+    // 初始化时加载当前配置
+    LaunchedEffect(mimeMap.value) {
+        jsonText = try {
+            val moshi = com.squareup.moshi.Moshi.Builder().build()
+            val adapter = moshi.adapter<Map<String, com.resdownloader.data.model.MimeInfo>>(
+                com.squareup.moshi.Types.newParameterizedType(
+                    Map::class.java, 
+                    String::class.java, 
+                    com.resdownloader.data.model.MimeInfo::class.java
+                )
+            )
+            adapter.indent("  ").toJson(mimeMap.value)
+        } catch (e: Exception) {
+            mimeMap.value.entries.joinToString("\n") { (mime, info) ->
+                "\"$mime\": {\"type\": \"${info.type}\", \"suffix\": \"${info.suffix}\"}"
+            }
+        }
+    }
+    
+    // 资源类型选项
+    val resourceTypes = listOf(
+        "video" to "视频",
+        "audio" to "音频", 
+        "image" to "图片",
+        "pdf" to "PDF",
+        "xls" to "表格",
+        "doc" to "文档",
+        "font" to "字体",
+        "m3u8" to "M3U8播放列表",
+        "live" to "直播流",
+        "stream" to "通用流"
+    )
+    
+    // 解析JSON
+    fun parseMimeJson(text: String): Map<String, com.resdownloader.data.model.MimeInfo>? {
+        return try {
+            val moshi = com.squareup.moshi.Moshi.Builder().build()
+            val type = com.squareup.moshi.Types.newParameterizedType(
+                Map::class.java,
+                String::class.java,
+                com.resdownloader.data.model.MimeInfo::class.java
+            )
+            val adapter = moshi.adapter<Map<String, com.resdownloader.data.model.MimeInfo>>(type)
+            adapter.fromJson(text)
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    // 验证JSON格式
+    fun validateJson(text: String): String? {
+        if (text.isBlank()) return null // 允许清空
+        return try {
+            val result = parseMimeJson(text)
+            if (result == null) "JSON格式错误" else null
+        } catch (e: Exception) {
+            "JSON格式错误: ${e.message}"
+        }
+    }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(stringResource(R.string.mime_type_rule))
+                Row {
+                    // 切换编辑/预览模式
+                    IconButton(onClick = { isEditMode = !isEditMode }) {
+                        Icon(
+                            imageVector = if (isEditMode) Icons.Default.List else Icons.Default.Edit,
+                            contentDescription = if (isEditMode) "列表模式" else "编辑模式"
+                        )
+                    }
+                    // 重置为默认
+                    IconButton(onClick = {
+                        val defaultMap = com.resdownloader.data.model.MimeDefaults.defaultMimeMap
+                        jsonText = try {
+                            val moshi = com.squareup.moshi.Moshi.Builder().build()
+                            val adapter = moshi.adapter<Map<String, com.resdownloader.data.model.MimeInfo>>(
+                                com.squareup.moshi.Types.newParameterizedType(
+                                    Map::class.java,
+                                    String::class.java,
+                                    com.resdownloader.data.model.MimeInfo::class.java
+                                )
+                            )
+                            adapter.indent("  ").toJson(defaultMap)
+                        } catch (e: Exception) {
+                            jsonText
+                        }
+                        jsonError = null
+                        Toast.makeText(context, "已恢复默认规则", Toast.LENGTH_SHORT).show()
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "恢复默认"
+                        )
+                    }
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 300.dp, max = 500.dp)
+            ) {
+                if (isEditMode) {
+                    // JSON编辑模式
+                    Text(
+                        text = "MIME类型 → (资源类型, 文件后缀) 映射配置",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    OutlinedTextField(
+                        value = jsonText,
+                        onValueChange = { 
+                            jsonText = it
+                            jsonError = validateJson(it)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
+                        placeholder = { Text("输入JSON格式的MIME映射...", fontSize = 12.sp) },
+                        isError = jsonError != null,
+                        supportingText = {
+                            if (jsonError != null) {
+                                Text(jsonError!!, color = MaterialTheme.colorScheme.error)
+                            } else {
+                                Text("JSON格式: {\"MIME类型\": {\"type\": \"资源类型\", \"suffix\": \".后缀\"}}")
+                            }
+                        }
+                    )
+                } else {
+                    // 列表预览模式
+                    Text(
+                        text = "当前拦截规则预览（共 ${mimeMap.value.size} 条）",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    ) {
+                        items(mimeMap.value.entries.toList().sortedBy { it.key }) { (mime, info) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = mime,
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text(
+                                    text = "${info.type}${info.suffix}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            HorizontalDivider(modifier = Modifier.alpha(0.3f))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    // 保存配置
+                    val parsed = parseMimeJson(jsonText) ?: emptyMap()
+                    scope.launch {
+                        viewModel.setMimeMap(parsed)
+                        Toast.makeText(context, "拦截规则已保存", Toast.LENGTH_SHORT).show()
+                    }
+                    onDismiss()
+                },
+                enabled = jsonError == null
+            ) {
+                Text("保存")
             }
         },
         dismissButton = {
@@ -1783,6 +2076,196 @@ private fun AboutDialog(
     )
 }
 
+// ==================== 恢复默认设置对话框 ====================
+
+private enum class ResetType {
+    ALL,      // 恢复全部设置
+    RULE,     // 仅恢复域名规则
+    MIME,     // 仅恢复拦截规则
+    PROXY     // 仅恢复代理设置
+}
+
+@Composable
+private fun ResetSettingsDialog(
+    onDismiss: () -> Unit,
+    onReset: (ResetType) -> Unit
+) {
+    var selectedType by remember { mutableStateOf(ResetType.ALL) }
+    var showConfirm by remember { mutableStateOf(false) }
+    
+    if (showConfirm) {
+        // 确认对话框
+        AlertDialog(
+            onDismissRequest = { showConfirm = false },
+            title = { Text("确认恢复") },
+            text = {
+                Text(
+                    when (selectedType) {
+                        ResetType.ALL -> "确定要恢复所有设置到默认值吗？"
+                        ResetType.RULE -> "确定要恢复域名规则到默认值吗？"
+                        ResetType.MIME -> "确定要恢复拦截规则到默认值吗？"
+                        ResetType.PROXY -> "确定要恢复代理设置到默认值吗？"
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showConfirm = false
+                    onReset(selectedType)
+                }) {
+                    Text("确认", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirm = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    } else {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(stringResource(R.string.reset_settings)) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = "选择要恢复的设置项：",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // 恢复选项列表
+                    ResetOption(
+                        title = "恢复全部设置",
+                        description = "重置所有设置项到默认值",
+                        icon = Icons.Default.Refresh,
+                        selected = selectedType == ResetType.ALL,
+                        onClick = { selectedType = ResetType.ALL }
+                    )
+                    
+                    HorizontalDivider(modifier = Modifier.alpha(0.3f))
+                    
+                    ResetOption(
+                        title = "仅恢复域名规则",
+                        description = "将域名规则恢复为默认配置",
+                        icon = Icons.Outlined.FilterList,
+                        selected = selectedType == ResetType.RULE,
+                        onClick = { selectedType = ResetType.RULE }
+                    )
+                    
+                    HorizontalDivider(modifier = Modifier.alpha(0.3f))
+                    
+                    ResetOption(
+                        title = "仅恢复拦截规则",
+                        description = "将MIME类型映射恢复为默认配置",
+                        icon = Icons.Outlined.Category,
+                        selected = selectedType == ResetType.MIME,
+                        onClick = { selectedType = ResetType.MIME }
+                    )
+                    
+                    HorizontalDivider(modifier = Modifier.alpha(0.3f))
+                    
+                    ResetOption(
+                        title = "仅恢复代理设置",
+                        description = "将代理端口、主机等恢复为默认",
+                        icon = Icons.Outlined.SettingsEthernet,
+                        selected = selectedType == ResetType.PROXY,
+                        onClick = { selectedType = ResetType.PROXY }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // 提示信息
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "恢复设置后，当前配置将被永久替换为默认值",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showConfirm = true },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("恢复默认")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun ResetOption(
+    title: String,
+    description: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = onClick
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (selected) MaterialTheme.colorScheme.primary 
+                   else MaterialTheme.colorScheme.outline
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline
+            )
+        }
+    }
+}
+
 // ==================== 辅助函数 ====================
 
 @Composable
@@ -1972,15 +2455,16 @@ private fun openCertificateSettings(context: Context, certFile: File) {
 
 private fun installApk(context: Context, filePath: String) {
     try {
+        val file = java.io.File(filePath)
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(
-                Uri.parse("file://$filePath"),
-                "application/vnd.android.package-archive"
-            )
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                flags = flags or Intent.FLAG_GRANT_READ_URI_PERMISSION
-            }
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(intent)
     } catch (e: Exception) {

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.resdownloader.BuildConfig
 import com.resdownloader.data.model.AssetInfo
+import com.resdownloader.data.model.MimeDefaults
 import com.resdownloader.data.model.MimeInfo
 import com.resdownloader.data.model.VersionInfo
 import com.resdownloader.data.preferences.PreferencesManager
@@ -82,7 +83,22 @@ class SettingsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     val rule = preferencesManager.rule
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "*")
+        .stateIn(
+            viewModelScope, 
+            SharingStarted.WhileSubscribed(5000), 
+            """*
+*.qq.com
+video.qq.com
+*.douyin.com
+*.kuaishou.com
+*.xiaohongshu.com
+*.bilibili.com
+*.kugou.com
+y.qq.com
+
+# 排除
+!static.qq.com"""
+        )
 
     val mimeMap = preferencesManager.mimeMap
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
@@ -266,6 +282,84 @@ class SettingsViewModel @Inject constructor(
     fun resetUpdateState() {
         updateRepository.resetState()
     }
+
+    // ==================== 恢复默认设置方法 ====================
+
+    /**
+     * 恢复所有设置到默认值
+     */
+    fun resetAllSettings() {
+        viewModelScope.launch {
+            preferencesManager.setHost("127.0.0.1")
+            preferencesManager.setProxyPort(8899)
+            preferencesManager.setTheme("lightTheme")
+            preferencesManager.setQuality(0)
+            preferencesManager.setFilenameLen(0)
+            preferencesManager.setFilenameTime(true)
+            preferencesManager.setUpstreamProxy("")
+            preferencesManager.setOpenProxy(false)
+            preferencesManager.setDownloadProxy(false)
+            preferencesManager.setAutoProxy(false)
+            preferencesManager.setWxAction(true)
+            preferencesManager.setTaskNumber(8)
+            preferencesManager.setDownNumber(3)
+            preferencesManager.setUserAgent("")
+            preferencesManager.setUseHeaders("default")
+            preferencesManager.setInsertTail(true)
+            // 恢复规则
+            setRule(getDefaultRule())
+            // 恢复MIME映射
+            setMimeMap(MimeDefaults.defaultMimeMap)
+        }
+    }
+
+    /**
+     * 仅恢复域名规则
+     */
+    fun resetRule() {
+        viewModelScope.launch {
+            setRule(getDefaultRule())
+        }
+    }
+
+    /**
+     * 仅恢复拦截规则（MIME映射）
+     */
+    fun resetMimeMap() {
+        viewModelScope.launch {
+            setMimeMap(MimeDefaults.defaultMimeMap)
+        }
+    }
+
+    /**
+     * 仅恢复代理设置
+     */
+    fun resetProxySettings() {
+        viewModelScope.launch {
+            preferencesManager.setHost("127.0.0.1")
+            preferencesManager.setProxyPort(8899)
+            preferencesManager.setUpstreamProxy("")
+            preferencesManager.setOpenProxy(false)
+            preferencesManager.setDownloadProxy(false)
+            preferencesManager.setAutoProxy(false)
+        }
+    }
+
+    /**
+     * 获取默认域名规则
+     */
+    private fun getDefaultRule(): String = """*
+*.qq.com
+video.qq.com
+*.douyin.com
+*.kuaishou.com
+*.xiaohongshu.com
+*.bilibili.com
+*.kugou.com
+y.qq.com
+
+# 排除
+!static.qq.com"""
 
     sealed class UiEvent {
         data class Error(val message: String) : UiEvent()

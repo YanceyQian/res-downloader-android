@@ -104,6 +104,7 @@
     <string name="network">网络</string>
     <string name="system">系统</string>
     <string name="about_section">关于</string>
+    <string name="reset_settings">恢复默认设置</string>
     <string name="download_path">下载目录</string>
     <string name="proxy_port">代理端口</string>
     <string name="language">语言</string>
@@ -137,7 +138,9 @@
     <string name="mime_map">拦截规则</string>
     <string name="mime_map_tip">json格式，如果不清楚保持默认就行，修改后请重启软件</string>
     <string name="domain_rule">域名规则</string>
-    <string name="domain_rule_tip">默认*匹配所有域，每个规则一行，支持如下:
+    <string name="domain_rule_tip">默认*匹配所有域，每个规则一行，支持如下:</string>
+    <string name="mime_type_rule">拦截类型</string>
+    <string name="mime_type_rule_tip">设置需要拦截的文件类型，如视频、音频、图片等</string>
 
 *.qq.com
 video.qq.com
