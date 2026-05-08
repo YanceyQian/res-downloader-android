@@ -46,7 +46,7 @@ class ProxyRepository @Inject constructor(
         // 监听服务中的资源
         repositoryScope.launch {
             while (true) {
-                _resources.value = ProxyVpnService.getResourcesList()
+                _resources.value = ProxyVpnService.getResources()
                 applyFilter()
                 kotlinx.coroutines.delay(500)
             }
@@ -95,7 +95,7 @@ class ProxyRepository @Inject constructor(
     }
 
     fun clearResources() {
-        ProxyVpnService.clearResourcesList()
+        ProxyVpnService.clearResources()
         _resources.value = emptyList()
         _filteredResources.value = emptyList()
     }

@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0](https://github.com/YanceyQian/res-downloader-android/compare/v1.1.1...v1.2.0) - 2026-05-08
+
+### 新增功能
+
+- ✨ **完成视频号下载功能完整迁移** - 从原项目 (Go + Wails) 移植到 Android 端，包括链接解析、视频信息获取、解密下载全流程
+- ✨ **新增 WechatVideoDownloader.kt** - 微信视频号专用下载器
+
+### 功能优化
+
+- 🔧 **VPN 流量转发已修复** - 优化 ProxyVpnService.kt ByteBuffer 流量处理逻辑，解决 VPN 流量丢失问题
+- 🔧 新增熵值计算 (`calculateEntropy`) - 检测数据是否为加密内容
+- 🔧 新增 MP4 文件头修复 (`fixMp4Header`) - 确保解密后的视频可正常播放
+- 🔧 新增密钥哈希函数 (`hashKey`) - 用于解密结果缓存和验证
+- 🔧 增强平台检测 - 新增 `toPlatform()` 扩展函数支持更多平台
+- 🔧 优化 ProxyVpnService.kt ByteBuffer 流量处理逻辑
+- 🔧 优化 VideoDecryptor.kt 解密结果处理 - 使用命名参数提高可读性
+
+### 问题修复
+
+- 🐛 修复 ProxyVpnService.kt：`limit()` 函数调用语法修复
+- 🐛 修复 ProxyVpnService.kt：添加 Platform 枚举类型导入
+- 🐛 修复 WechatVideoDownloader.kt：OkHttp MediaType API 兼容性问题
+- 🐛 修复 ProxyRepository.kt：方法名错误修复
+- 🐛 修复 VideoDecryptor.kt：DecryptResult 参数类型不匹配问题
+
+### 文档更新
+
+- 📝 新增 MIGRATION_REPORT.md 全量功能移植详细报告
+
 ## [1.1.1](https://github.com/YanceyQian/res-downloader-android/compare/v1.1.0...v1.1.1) - 2026-05-08
 
 ### 功能优化
