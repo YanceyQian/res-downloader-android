@@ -17,6 +17,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -735,6 +736,7 @@ fun SettingsScreen(
     // MIME类型规则（拦截类型）
     if (showMimeTypeDialog) {
         MimeTypeConfigDialog(
+            viewModel = viewModel,
             onDismiss = { showMimeTypeDialog = false }
         )
     }
@@ -1317,6 +1319,7 @@ private fun RuleEditorDialog(
 
 @Composable
 private fun MimeTypeConfigDialog(
+    viewModel: SettingsViewModel,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1481,7 +1484,9 @@ private fun MimeTypeConfigDialog(
                             .fillMaxWidth()
                             .weight(1f)
                     ) {
-                        items(mimeMap.value.entries.toList().sortedBy { it.key }) { (mime, info) ->
+                        items(mimeMap.value.entries.toList().sortedBy { it.key }) { entry ->
+                            val mime = entry.key
+                            val info = entry.value
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1499,7 +1504,7 @@ private fun MimeTypeConfigDialog(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
-                            HorizontalDivider(modifier = Modifier.alpha(0.3f))
+                            Divider(modifier = Modifier.alpha(0.3f))
                         }
                     }
                 }
@@ -2148,7 +2153,7 @@ private fun ResetSettingsDialog(
                         onClick = { selectedType = ResetType.ALL }
                     )
                     
-                    HorizontalDivider(modifier = Modifier.alpha(0.3f))
+                    Divider(modifier = Modifier.alpha(0.3f))
                     
                     ResetOption(
                         title = "仅恢复域名规则",
@@ -2158,7 +2163,7 @@ private fun ResetSettingsDialog(
                         onClick = { selectedType = ResetType.RULE }
                     )
                     
-                    HorizontalDivider(modifier = Modifier.alpha(0.3f))
+                    Divider(modifier = Modifier.alpha(0.3f))
                     
                     ResetOption(
                         title = "仅恢复拦截规则",
@@ -2168,7 +2173,7 @@ private fun ResetSettingsDialog(
                         onClick = { selectedType = ResetType.MIME }
                     )
                     
-                    HorizontalDivider(modifier = Modifier.alpha(0.3f))
+                    Divider(modifier = Modifier.alpha(0.3f))
                     
                     ResetOption(
                         title = "仅恢复代理设置",
