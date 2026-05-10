@@ -1,0 +1,85 @@
+# Android
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+*.apk
+*.ap_
+*.aab
+
+# Keystore files (!!! 非常重要，不要提交到仓库 !!!)
+*.keystore
+*.jks
+*.p12
+*.pem
+
+# Android Studio
+*.iml
+.idea/
+*.swp
+*.swo
+*~
+
+# Build
+build/
+
+# Logs
+*.log
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+vendor/
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE and temporary files
+.trae-cn/
+.trae/
+.codebuddy/
+.idea/
+.vscode/
+1.txt
+
+# Build outputs
+app/release/
+app/debug/
+
+# Release scripts (optional, can be added if needed)
+# publish-*.bat
+# publish-*.ps1
+# publish-*.sh
+
+# Git hooks (local only - not versioned)
+.git/hooks/
+
+# ============================================
+# 代码管理规范文件 - 仅本地使用，不推送到 GitHub
+# ============================================
+CODE_MANAGEMENT_GUIDE.md
+QUICK_START_SOLO.md
+PUSH_READY.md
+.push-rules.md

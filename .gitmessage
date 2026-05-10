@@ -1,0 +1,18 @@
+<type>(<scope>): <description>
+
+[详细描述（可选）]
+
+[相关 Issue/PR 引用（可选）]
+- Closes #
+- Related to #
+
+---
+类型说明:
+  feat:     新功能
+  fix:      修复 bug
+  docs:     文档更新
+  style:    代码格式（不影响代码运行的改动）
+  refactor: 重构（既不新增功能也不修复 bug）
+  perf:     性能优化
+  test:     测试相关
+  chore:    构建/工具/配置相关

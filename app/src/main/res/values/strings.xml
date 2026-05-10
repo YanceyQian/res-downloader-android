@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">爱享素材下载器</string>
+    <string name="home">首页</string>
+
+    <!-- Main Screen -->
+    <string name="start_proxy">启动代理</string>
+    <string name="stop_proxy">停止代理</string>
+    <string name="proxy_running">代理运行中</string>
+    <string name="proxy_stopped">代理已停止</string>
+    <string name="no_resources">暂无资源</string>
+    <string name="pull_to_refresh">下拉刷新</string>
+    <string name="open_grab">开启抓取</string>
+    <string name="close_grab">关闭抓取</string>
+    <string name="grab_type">抓取类型</string>
+    <string name="clear_list">清空列表</string>
+    <string name="clear_list_tip">清空所有记录?</string>
+    <string name="remember_clear_choice">记住此选择，下次直接清除</string>
+    <string name="batch_download">批量下载</string>
+    <string name="batch_export">批量导出</string>
+    <string name="batch_import">批量导入</string>
+    <string name="export_url">导出链接</string>
+    <string name="import_success">导出成功</string>
+    <string name="total_resources">共%1$d个资源</string>
+    <string name="search">搜索</string>
+    <string name="search_description">关键字搜索…</string>
+
+    <!-- Filter -->
+    <string name="filter_all">全部</string>
+    <string name="filter_video">视频</string>
+    <string name="filter_audio">音频</string>
+    <string name="filter_image">图片</string>
+    <string name="filter_m3u8">M3U8</string>
+    <string name="filter_live">直播流</string>
+    <string name="filter_stream">流数据</string>
+    <string name="filter_xls">表格</string>
+    <string name="filter_doc">文档</string>
+    <string name="filter_pdf">PDF</string>
+    <string name="filter_font">字体</string>
+    <string name="filter_domain">域</string>
+    <string name="filter_choice">已选</string>
+    <string name="filter_type">类型</string>
+
+    <!-- Preview -->
+    <string name="preview">预览</string>
+    <string name="preview_tip">无法预览</string>
+    <string name="status">状态</string>
+    <string name="description">描述</string>
+    <string name="resource_size">资源大小</string>
+    <string name="save_path">保存路径</string>
+    <string name="save_path_empty">请设置保存位置</string>
+    <string name="operation">操作</string>
+
+    <!-- Resource Status -->
+    <string name="status_ready">就绪</string>
+    <string name="status_pending">待处理</string>
+    <string name="status_running">运行中</string>
+    <string name="status_error">错误</string>
+    <string name="status_done">完成</string>
+    <string name="handle">后续处理</string>
+    <string name="direct_download">直接下载</string>
+    <string name="download_success">下载成功</string>
+    <string name="download_no_tip">该类型暂不支持下载，请复制链接后使用其他工具下载</string>
+    <string name="copy_data">复制数据</string>
+    <string name="open_link">打开链接</string>
+    <string name="open_file">打开文件</string>
+    <string name="delete_row">删除记录</string>
+    <string name="delete_tip">运行中任务无法删除</string>
+    <string name="cancel_down">取消下载</string>
+    <string name="more_operation">更多操作</string>
+    <string name="video_decode">视频解密</string>
+    <string name="video_decode_loading">解密中</string>
+    <string name="video_decode_no">无法解密</string>
+    <string name="video_decode_success">解密成功</string>
+    <string name="use_data">请选择需要的数据</string>
+    <string name="import_placeholder">添加多个时，请确保每行只有一个(每个链接回车换行)</string>
+    <string name="import_empty">请输入需要导入的数据</string>
+    <string name="manual_input_title">手动输入链接</string>
+    <string name="manual_input_description">适用于直链资源（如 .mp4、.mp3、.jpg 等文件链接）</string>
+    <string name="manual_input_vs_proxy">手动输入 vs 代理抓取</string>
+    <string name="manual_input_tip_direct">直接下载：支持直链资源</string>
+    <string name="manual_input_tip_proxy">代理抓取：支持平台资源</string>
+    <string name="manual_input_direct_title">分享链接解析</string>
+    <string name="manual_input_direct_desc">粘贴分享链接（如抖音视频链接）自动解析并下载</string>
+    <string name="manual_input_proxy_title">代理抓取</string>
+    <string name="manual_input_proxy_desc">开启代理后，自动捕获应用中的视频、音频、图片等资源</string>
+    <string name="manual_input_bilibili_note">B站视频推荐使用分享链接解析，也支持代理抓取</string>
+
+    <!-- Download -->
+    <string name="download">下载</string>
+    <string name="downloading">下载中</string>
+    <string name="downloaded">已下载</string>
+    <string name="download_failed">下载失败</string>
+    <string name="download_paused">已暂停</string>
+    <string name="download_progress">%1$d%%</string>
+    <string name="download_complete">下载完成</string>
+    <string name="download_queued">已加入队列，当前队列长度：%1$d</string>
+
+    <!-- Settings -->
+    <string name="settings">设置</string>
+    <string name="basic_setting">基础设置</string>
+    <string name="advanced_setting">高级设置</string>
+    <string name="storage">存储</string>
+    <string name="network">网络</string>
+    <string name="system">系统</string>
+    <string name="about_section">关于</string>
+    <string name="reset_settings">恢复默认设置</string>
+    <string name="download_path">下载目录</string>
+    <string name="proxy_port">代理端口</string>
+    <string name="language">语言</string>
+    <string name="check_update">检查更新</string>
+    <string name="about">关于</string>
+    <string name="version">版本</string>
+    <string name="current_version">当前版本: %1$s</string>
+    <string name="restart_tip">如果不清楚保持默认就行，修改后请重启软件</string>
+    <string name="save_dir">保存目录</string>
+    <string name="filename_rules">文件命名</string>
+    <string name="filename_rules_tip">输入框控制文件命名的长度(不含时间、0为无效，此选项有描述信息时有效)，开关控制文件末尾是否添加时间标识</string>
+    <string name="auto_proxy">自动拦截</string>
+    <string name="auto_proxy_tip">打开软件时自动启用拦截</string>
+    <string name="quality">清晰度</string>
+    <string name="quality_value">默认(推荐),超清,高画质,中画质,低画质</string>
+    <string name="quality_tip">视频号有效</string>
+    <string name="full_intercept">全量拦截</string>
+    <string name="full_intercept_tip">微信视频号是否全量拦截，否：只拦截视频详情</string>
+    <string name="insert_tail">添入尾部</string>
+    <string name="insert_tail_tip">拦截到新数据是否添加到列表尾部</string>
+    <string name="upstream_proxy">上游代理</string>
+    <string name="upstream_proxy_tip">用于结合其他代理工具，格式: http://username:password@your.proxy.server:port</string>
+    <string name="download_proxy">下载代理</string>
+    <string name="download_proxy_tip">下载操作时是否使用上游代理</string>
+    <string name="user_agent_tip">如不清楚请保持默认</string>
+    <string name="connections">连接数</string>
+    <string name="connections_tip">如不清楚请保持默认，移动端建议2-4，用于节省电量</string>
+    <string name="down_number">下载数</string>
+    <string name="down_number_tip">同时进行的下载数量</string>
+    <string name="use_headers_tip">默认系统过滤，定义下载时可使用的header参数，逗号分割</string>
+    <string name="mime_map">拦截规则</string>
+    <string name="mime_map_tip">json格式，如果不清楚保持默认就行，修改后请重启软件</string>
+    <string name="domain_rule">域名规则</string>
+    <string name="domain_rule_tip">默认*匹配所有域，每个规则一行，支持如下:\n# 抖音/头条系\n*.douyin.com\n*.iesdouyin.com\n*.amemv.com\n\n# 快手系\n*.kuaishou.com\n*.kspkg.com\n\n# 小红书\n*.xiaohongshu.com\n*.xhslink.com\n\n# 微信/视频号\nweixin.qq.com\n*.wechat.com\nservicewechat.com\n\n# QQ音乐\ny.qq.com\nmusic.qq.com\n\n# 酷狗\n*.kugou.com\n*.kgimg.com\n\n# 其他常见平台\n*.bilibili.com\n*.googlevideo.com\nv.qq.com\n*.weishi.qq.com\n\n# 排除（使用!开头）\n!static.qq.com</string>
+    <string name="mime_type_rule">拦截类型</string>
+    <string name="mime_type_rule_tip">设置需要拦截的文件类型，如视频、音频、图片等</string>
+    <string name="port_format_error">port 格式错误</string>
+    <string name="host_format_error">host 格式错误</string>
+    <string name="theme">主题</string>
+    <string name="host">Host</string>
+    <string name="filename_len">文件名长度</string>
+    <string name="filename_time">添加时间</string>
+    <string name="user_agent">User-Agent</string>
+    <string name="use_headers">使用Headers</string>
+    <string name="task_number">任务数</string>
+
+    <!-- Update -->
+    <string name="new_version_available">发现新版本</string>
+    <string name="update_now">立即更新</string>
+    <string name="update_later">稍后再说</string>
+    <string name="downloading_update">正在下载更新…</string>
+    <string name="update_downloaded">更新已下载</string>
+    <string name="install_now">立即安装</string>
+    <string name="no_update">已是最新版本</string>
+
+    <!-- Permissions -->
+    <string name="permission_required">需要权限</string>
+    <string name="storage_permission_rationale">需要存储权限来保存下载的文件</string>
+    <string name="notification_permission_rationale">需要通知权限来显示下载进度</string>
+    <string name="grant_permission">授予权限</string>
+
+    <!-- Certificate -->
+    <string name="install_certificate">安装证书</string>
+    <string name="certificate_rationale">为了拦截 HTTPS 流量，需要安装 CA 证书。请按照提示操作：\n\n1. 下载证书\n2. 打开设置 → 安全 → 加密与凭据 → 从存储设备安装证书\n3. 选择已下载的证书文件</string>
+    <string name="certificate_downloaded">证书已下载</string>
+
+    <!-- Battery Optimization -->
+    <string name="battery_optimization">电池优化</string>
+    <string name="battery_optimization_rationale">为了保证后台下载和代理功能正常运行，请禁用电池优化。</string>
+    <string name="disable_optimization">禁用优化</string>
+
+    <!-- Common -->
+    <string name="copy_success">复制成功</string>
+    <string name="copy_fail">复制失败</string>
+    <string name="file_path">文件路径</string>
+    <string name="loading">loading</string>
+    <string name="select">选择</string>
+    <string name="submit">提交</string>
+    <string name="delete">删除</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+    <string name="cancel">取消</string>
+    <string name="confirm">确认</string>
+    <string name="ok">确定</string>
+    <string name="error">错误</string>
+    <string name="retry">重试</string>
+    <string name="copy_link">复制链接</string>
+    <string name="share">分享</string>
+    <string name="open">打开</string>
+    <string name="select_folder">选择文件夹</string>
+
+    <!-- Menu -->
+    <string name="menu_index">获取资源</string>
+    <string name="menu_setting">系统设置</string>
+    <string name="menu_locale">English</string>
+    <string name="menu_theme">主题更换</string>
+    <string name="menu_about">关于我们</string>
+
+    <!-- Footer / About -->
+    <string name="about_title">关于我们</string>
+    <string name="about_description">一款简洁易用的网络资源下载工具，支持分享链接解析和代理抓取两种方式获取视频、音频、图片等资源。适用于下载自己上传到各大平台的网络资源。</string>
+    <string name="about_support">支持的平台</string>
+    <string name="about_application">抖音,快手,小红书,B站,网易云音乐,微信视频号</string>
+    <string name="about_proxy_support">代理抓取还支持：QQ音乐,酷狗音乐</string>
+    <string name="about_forum">论坛</string>
+    <string name="about_cert_download">证书下载</string>
+    <string name="about_source_code">软件源码</string>
+    <string name="about_help">帮助支持</string>
+    <string name="about_update_log">更新日志</string>
+
+    <!-- Error -->
+    <string name="start_err_tip">错误提示</string>
+    <string name="start_err_content">当前启动过程遇到了问题，是否重置应用？</string>
+    <string name="start_err_positive_text">清理缓存并重启</string>
+    <string name="start_err_negative_text">关闭软件</string>
+    <string name="reset_app_tip">此操作会删除已拦截数据以及本应用相关数据，请谨慎操作！</string>
+
+    <!-- Download Quality -->
+    <string name="quality_default">默认(推荐)</string>
+    <string name="quality_highest">超清</string>
+    <string name="quality_high">高画质</string>
+    <string name="quality_medium">中画质</string>
+    <string name="quality_low">低画质</string>
+
+    <!-- Platform -->
+    <string name="platform">平台</string>
+</resources>

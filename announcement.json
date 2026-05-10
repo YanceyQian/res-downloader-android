@@ -1,0 +1,42 @@
+[
+  {
+    "id": "wechat-api-update-2026-05",
+    "platform": "WECHAT",
+    "title": "微信视频号接口更新通知",
+    "content": "微信已于近期更新了视频号 API，部分用户可能出现抓取失败。请更新到 v2.0.0 或更高版本以获得支持。\n\n如更新后仍有问题，请通过 GitHub Issues 反馈。",
+    "type": "WARNING",
+    "fixedInVersion": "2.0.0",
+    "minAppVersion": "2.0.0",
+    "startTime": "2026-05-01T00:00:00Z",
+    "endTime": "2026-06-01T00:00:00Z",
+    "actionUrl": "https://github.com/YanceyQian/res-downloader-android/releases",
+    "actionText": "立即更新"
+  },
+  {
+    "id": "douyin-api-update-2026-05",
+    "platform": "DOUYIN",
+    "title": "抖音接口更新通知",
+    "content": "抖音近期更新了分享链接格式，部分视频可能无法直接解析。\n\n建议使用代理抓取方式或稍后再试。",
+    "type": "WARNING",
+    "startTime": "2026-05-01T00:00:00Z",
+    "endTime": "2026-06-01T00:00:00Z"
+  },
+  {
+    "id": "xiaohongshu-api-update-2026-05",
+    "platform": "XIAOHONGSHU",
+    "title": "小红书接口更新通知",
+    "content": "小红书近期更新了笔记接口，代理抓取方式可能需要重新适配。\n\n建议使用分享链接解析或稍后再试。",
+    "type": "INFO",
+    "startTime": "2026-05-01T00:00:00Z",
+    "endTime": "2026-06-01T00:00:00Z"
+  },
+  {
+    "id": "bilibili-api-update-2026-05",
+    "platform": "BILIBILI",
+    "title": "B站视频下载说明",
+    "content": "部分 B站视频需要登录或会员才能下载，这是平台限制而非应用问题。\n\n建议尝试使用代理抓取或录屏方式保存。",
+    "type": "INFO",
+    "startTime": "2026-05-01T00:00:00Z",
+    "endTime": "2026-12-31T00:00:00Z"
+  }
+]
