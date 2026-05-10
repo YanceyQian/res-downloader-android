@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [待发布版本]
+
+### 规划中
+
+- 🔮 **动态规则系统** - 平台规则远程配置系统可行性分析完成，详见 [docs/PLUGIN_SYSTEM_FEASIBILITY.md](docs/PLUGIN_SYSTEM_FEASIBILITY.md)
+- 🔮 **配置同步机制** - 与原项目同步流程增强，新增远程配置同步章节，详见 [docs/SYNC_FLOW.md](docs/SYNC_FLOW.md)
+
+### 文档更新
+
+- 📝 新增 [PLUGIN_SYSTEM_FEASIBILITY.md](docs/PLUGIN_SYSTEM_FEASIBILITY.md) - 动态规则系统可行性分析报告
+- 📝 更新 [SYNC_FLOW.md](docs/SYNC_FLOW.md) - 新增平台规则远程配置同步章节
+- 📝 更新 [README.md](README.md) - 添加动态规则系统功能介绍
+- 📝 更新 [UPDATE_MECHANISM.md](docs/UPDATE_MECHANISM.md) - 新增远程配置更新说明
+- 📝 更新 [OPENSOURCE.md](OPENSOURCE.md) - 更新技术架构说明
+- 📝 更新 [MIGRATION_REPORT.md](MIGRATION_REPORT.md) - 添加未来规划章节
+- 📝 更新 [USER_GUIDE.md](docs/USER_GUIDE.md) - 添加配置更新说明
+
 ## [2.0.0](https://github.com/YanceyQian/res-downloader-android/compare/v1.3.0...v2.0.0) - 2026-05-10
 
 ### 新增功能
