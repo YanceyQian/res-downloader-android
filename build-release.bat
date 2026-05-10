@@ -7,6 +7,7 @@ echo.
 
 :: 查找Java路径
 set JAVA_HOME=
+if exist "C:\Program Files\Android\Android Studio1\jbr" set "JAVA_HOME=C:\Program Files\Android\Android Studio1\jbr"
 if exist "C:\Program Files\Android\Android Studio\jbr" set "JAVA_HOME=C:\Program Files\Android\Android Studio\jbr"
 if exist "C:\Program Files\Android\Android Studio\jre" set "JAVA_HOME=C:\Program Files\Android\Android Studio\jre"
 

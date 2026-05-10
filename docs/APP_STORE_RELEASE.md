@@ -2,7 +2,7 @@
 
 ## ⚠️ 重要提示：代理应用的限制
 
-**请注意**：由于此应用使用 VPN 代理和抓包功能，可能会被部分应用商店拒绝或限制。
+**请注意**：由于此应用使用 VPN 代理功能，可能会被部分应用商店拒绝或限制。
 
 ### 推荐发布渠道
 
@@ -59,19 +59,20 @@ defaultConfig {
 【应用名称】爱享素材下载器
 
 【应用介绍】
-一款专业的网络资源下载工具，支持多种平台资源抓取和下载。
+一款简洁易用的网络资源下载工具，支持分享链接解析和代理抓取两种方式获取视频、音频、图片等资源。
 
 【主要功能】
-✓ 代理抓包：通过本地代理捕获网络资源
-✓ 多平台支持：视频号、抖音、快手、小红书等
+✓ 分享链接解析：复制分享链接直接下载（推荐）
+✓ VPN代理抓取：开启代理后自动捕获应用中的资源
+✓ 多平台支持：抖音、快手、小红书、B站、网易云音乐、微信视频号、QQ音乐、酷狗音乐等
 ✓ M3U8下载：支持流媒体下载
-✓ 下载管理：支持后台下载、进度显示
+✓ 下载管理：支持后台下载、进度显示、断点续传
 ✓ 自动更新：第一时间获取新版本
 
 【温馨提示】
 1. 本工具仅用于下载您拥有合法使用权的资源
 2. 使用时请遵守相关平台服务条款
-3. 请妥善保管证书，安装证书时请确认来源
+3. Android版与桌面版不同，需要为每个平台单独实现支持
 
 【开源声明】
 本应用基于 putyy/res-downloader 开发，遵循 Apache 2.0 开源协议。
@@ -83,19 +84,20 @@ defaultConfig {
 【App Name】Res Downloader
 
 【Description】
-A professional network resource download tool, supporting multiple platforms.
+A simple and easy-to-use network resource download tool. Supports share link parsing and proxy capture to download videos, audio, images and other resources.
 
 【Features】
-✓ Proxy capture: Capture network resources through local proxy
-✓ Multi-platform support: Multiple mainstream platforms
+✓ Share link parsing: Copy share link to download directly (Recommended)
+✓ Proxy capture: Enable proxy to auto-capture resources from apps
+✓ Multi-platform support: Douyin, Kuaishou, Xiaohongshu, Bilibili, Netease Music, WeChat Channels, QQ Music, Kugou Music, etc.
 ✓ M3U8 download: Streaming media support
-✓ Download management: Background download with progress
+✓ Download management: Background download with progress and resume
 ✓ Auto update: Get latest version quickly
 
 【Notice】
 1. This tool is only for downloading resources you have legal rights to use
 2. Please comply with relevant platform terms of service
-3. Please verify certificate sources when installing
+3. Android version requires separate implementation for each platform
 
 【Open Source】
 Based on putyy/res-downloader, Apache 2.0 License.

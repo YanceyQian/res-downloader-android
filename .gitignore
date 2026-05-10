@@ -62,6 +62,7 @@ Thumbs.db
 .codebuddy/
 .idea/
 .vscode/
+1.txt
 
 # Build outputs
 app/release/
@@ -71,3 +72,14 @@ app/debug/
 # publish-*.bat
 # publish-*.ps1
 # publish-*.sh
+
+# Git hooks (local only - not versioned)
+.git/hooks/
+
+# ============================================
+# 代码管理规范文件 - 仅本地使用，不推送到 GitHub
+# ============================================
+CODE_MANAGEMENT_GUIDE.md
+QUICK_START_SOLO.md
+PUSH_READY.md
+.push-rules.md

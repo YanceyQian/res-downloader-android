@@ -7,6 +7,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
+import java.net.InetSocketAddress
+import java.net.Proxy
 import java.net.URI
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
@@ -18,18 +20,84 @@ import java.util.regex.Pattern
  * - AES-128 加密视频解密
  * - 分片下载与合并
  * - 多码率自适应
+ * - 代理支持
+ * - B站弹幕/字幕下载
  */
 class M3u8Downloader {
 
     companion object {
         private const val TAG = "M3u8Downloader"
+        private const val DEFAULT_CONN_TIMEOUT = 30L
+        private const val DEFAULT_READ_TIMEOUT = 60L
+        private const val MAX_CONCURRENT = 3
     }
 
-    private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .followRedirects(true)
-        .build()
+    private var okHttpClient: OkHttpClient = createDefaultClient()
+    private var upstreamProxy: String = ""
+
+    /**
+     * 创建默认 OkHttpClient
+     */
+    private fun createDefaultClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(DEFAULT_CONN_TIMEOUT, TimeUnit.SECONDS)
+            .readTimeout(DEFAULT_READ_TIMEOUT, TimeUnit.SECONDS)
+            .followRedirects(true)
+            .build()
+    }
+
+    /**
+     * 设置上游代理
+     * @param proxyUrl 代理地址，格式：http://host:port 或 socks5://host:port
+     */
+    fun setProxy(proxyUrl: String) {
+        upstreamProxy = proxyUrl
+        okHttpClient = if (proxyUrl.isNotEmpty()) {
+            try {
+                val proxy = parseProxyUrl(proxyUrl)
+                Log.d(TAG, "M3U8 Downloader using proxy: $proxyUrl")
+                OkHttpClient.Builder()
+                    .connectTimeout(DEFAULT_CONN_TIMEOUT, TimeUnit.SECONDS)
+                    .readTimeout(DEFAULT_READ_TIMEOUT, TimeUnit.SECONDS)
+                    .followRedirects(true)
+                    .proxy(proxy)
+                    .build()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to parse proxy URL, using default: $proxyUrl", e)
+                createDefaultClient()
+            }
+        } else {
+            createDefaultClient()
+        }
+    }
+
+    /**
+     * 解析代理 URL
+     */
+    private fun parseProxyUrl(proxyUrl: String): Proxy {
+        return try {
+            when {
+                proxyUrl.startsWith("socks5://") -> {
+                    val hostPort = proxyUrl.removePrefix("socks5://")
+                    val parts = hostPort.split(":")
+                    Proxy(Proxy.Type.SOCKS, InetSocketAddress(parts[0], parts[1].toInt()))
+                }
+                proxyUrl.startsWith("http://") -> {
+                    val hostPort = proxyUrl.removePrefix("http://")
+                    val parts = hostPort.split(":")
+                    Proxy(Proxy.Type.HTTP, InetSocketAddress(parts[0], parts[1].toInt()))
+                }
+                proxyUrl.contains(":") -> {
+                    val parts = proxyUrl.split(":")
+                    Proxy(Proxy.Type.HTTP, InetSocketAddress(parts[0], parts[1].toInt()))
+                }
+                else -> Proxy.NO_PROXY
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse proxy URL: $proxyUrl", e)
+            Proxy.NO_PROXY
+        }
+    }
 
     data class M3u8Info(
         val baseUrl: String,
@@ -403,5 +471,180 @@ class M3u8Downloader {
      */
     private fun hexToBytes(hex: String): ByteArray {
         return hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    }
+
+    // ==================== B站弹幕/字幕下载支持 ====================
+
+    /**
+     * B站字幕信息
+     */
+    data class SubtitleInfo(
+        val lang: String,
+        val langKey: String,
+        val url: String,
+        val name: String
+    )
+
+    /**
+     * B站弹幕信息
+     */
+    data class DanmakuInfo(
+        val type: String,
+        val url: String,
+        val name: String
+    )
+
+    /**
+     * 下载 B站字幕
+     * @param outputPath 输出目录
+     * @param bvid B站视频 BV 号
+     * @param cid B站视频 CID
+     * @param callback 下载回调
+     */
+    suspend fun downloadBilibiliSubtitles(
+        outputPath: String,
+        bvid: String,
+        cid: Long,
+        callback: DownloadCallback? = null
+    ) = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Downloading subtitles for BV: $bvid, CID: $cid")
+
+            // 获取字幕列表
+            val subtitleListUrl = "https://api.bilibili.com/x/player/v2?aid=${bvid.removePrefix("BV")}&cid=$cid"
+            val response = fetchJson(subtitleListUrl)
+
+            val subtitles = parseBilibiliSubtitles(response)
+            if (subtitles.isEmpty()) {
+                Log.d(TAG, "No subtitles found for this video")
+                callback?.onComplete(File(outputPath))
+                return@withContext
+            }
+
+            val outputDir = File(outputPath)
+            if (!outputDir.exists()) {
+                outputDir.mkdirs()
+            }
+
+            // 下载每个字幕
+            for (subtitle in subtitles) {
+                val subtitleFile = File(outputDir, "${bvid}_${subtitle.name}.${if (subtitle.url.contains(".srt")) "srt" else "ass"}")
+                downloadFile(subtitle.url, subtitleFile)
+                Log.d(TAG, "Subtitle downloaded: ${subtitleFile.name}")
+            }
+
+            callback?.onComplete(outputDir)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error downloading subtitles", e)
+            callback?.onError(e.message ?: "Failed to download subtitles")
+        }
+    }
+
+    /**
+     * 下载 B站弹幕 (ASS 格式)
+     * @param outputPath 输出目录
+     * @param cid B站视频 CID
+     * @param callback 下载回调
+     */
+    suspend fun downloadBilibiliDanmaku(
+        outputPath: String,
+        cid: Long,
+        callback: DownloadCallback? = null
+    ) = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Downloading danmaku for CID: $cid")
+
+            val danmakuUrl = "https://api.bilibili.com/x/v1/dm/list.so?oid=$cid"
+            val response = fetchContent(danmakuUrl)
+
+            val outputDir = File(outputPath)
+            if (!outputDir.exists()) {
+                outputDir.mkdirs()
+            }
+
+            val danmakuFile = File(outputDir, "danmaku_$cid.xml")
+            downloadFile(danmakuUrl, danmakuFile)
+
+            Log.d(TAG, "Danmaku downloaded: ${danmakuFile.absolutePath}")
+            callback?.onComplete(danmakuFile)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error downloading danmaku", e)
+            callback?.onError(e.message ?: "Failed to download danmaku")
+        }
+    }
+
+    /**
+     * 解析 B站字幕列表
+     */
+    private fun parseBilibiliSubtitles(json: String): List<SubtitleInfo> {
+        val subtitles = mutableListOf<SubtitleInfo>()
+        try {
+            // 简单的 JSON 解析
+            val dataMatch = Regex("\"subtitles\"\\s*:\\s*\\[(.*?)\\]").find(json)
+            if (dataMatch != null) {
+                val subtitleArray = dataMatch.groupValues[1]
+                val itemPattern = Regex("\\{[^}]+\\}")
+
+                for (item in itemPattern.findAll(subtitleArray)) {
+                    val itemStr = item.value
+
+                    val langMatch = Regex("\"lang_key\"\\s*:\\s*\"([^\"]+)\"").find(itemStr)
+                    val urlMatch = Regex("\"subtitle_url\"\\s*:\\s*\"([^\"]+)\"").find(itemStr)
+                    val idMatch = Regex("\"id\"\\s*:\\s*(\\d+)").find(itemStr)
+
+                    if (langMatch != null && urlMatch != null) {
+                        val lang = langMatch.groupValues[1]
+                        val url = urlMatch.groupValues[1].replace("\\u002F", "/")
+                        val id = idMatch?.groupValues?.get(1) ?: "0"
+
+                        subtitles.add(SubtitleInfo(
+                            lang = lang,
+                            langKey = id,
+                            url = "https:${url}",
+                            name = "subtitle_$id"
+                        ))
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing subtitles", e)
+        }
+        return subtitles
+    }
+
+    /**
+     * 获取 JSON 内容
+     */
+    private fun fetchJson(url: String): String {
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36")
+            .header("Referer", "https://www.bilibili.com")
+            .build()
+
+        val response = okHttpClient.newCall(request).execute()
+        return response.body?.string() ?: "{}"
+    }
+
+    /**
+     * 下载文件
+     */
+    private fun downloadFile(url: String, output: File) {
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36")
+            .build()
+
+        val response = okHttpClient.newCall(request).execute()
+
+        if (!response.isSuccessful) {
+            throw Exception("Download failed: ${response.code}")
+        }
+
+        response.body?.byteStream()?.use { input ->
+            FileOutputStream(output).use { outputStream ->
+                input.copyTo(outputStream)
+            }
+        }
     }
 }

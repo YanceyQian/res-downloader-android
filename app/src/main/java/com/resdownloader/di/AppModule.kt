@@ -1,6 +1,7 @@
 package com.resdownloader.di
 
 import android.content.Context
+import com.resdownloader.util.WechatVideoDownloader
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -40,5 +41,11 @@ object AppModule {
         return Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
             .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideWechatVideoDownloader(okHttpClient: OkHttpClient): WechatVideoDownloader {
+        return WechatVideoDownloader()
     }
 }

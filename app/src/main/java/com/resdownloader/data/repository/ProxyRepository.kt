@@ -38,7 +38,7 @@ class ProxyRepository @Inject constructor(
         // 监听服务状态 - 使用更安全的方式访问 companion object
         repositoryScope.launch {
             while (true) {
-                _proxyState.value = ProxyVpnService.getRunning()
+                _proxyState.value = ProxyVpnService.isRunning
                 kotlinx.coroutines.delay(500)
             }
         }
@@ -125,7 +125,7 @@ class ProxyRepository @Inject constructor(
         val platform = detectPlatform(url)
         
         // 如果无法检测到类型，默认作为视频处理（如果是视频平台）
-        val finalType = if (type == ResourceType.OTHER && platform != Platform.OTHER) {
+        val finalType = if (type == ResourceType.OTHER && platform != Platform.UNKNOWN) {
             ResourceType.VIDEO
         } else {
             type
@@ -168,10 +168,10 @@ class ProxyRepository @Inject constructor(
             lowerUrl.contains("amemv.com") -> Platform.DOUYIN
             lowerUrl.contains("kuaishou.com") || lowerUrl.contains("kspkg.com") -> Platform.KUAISHOU
             lowerUrl.contains("xiaohongshu.com") || lowerUrl.contains("xhslink.com") -> Platform.XIAOHONGSHU
-            lowerUrl.contains("kugou.com") || lowerUrl.contains("kgimg.com") -> Platform.KUGOU
+            lowerUrl.contains("kugou.com") || lowerUrl.contains("kgimg.com") -> Platform.KOUGOU
             lowerUrl.contains("qq.com") && (lowerUrl.contains("music") || lowerUrl.contains("y.qq.com")) -> Platform.QQMUSIC
             lowerUrl.contains("bilibili.com") || lowerUrl.contains("b23.tv") || lowerUrl.contains("bilivideo.com") -> Platform.BILIBILI
-            else -> Platform.OTHER
+            else -> Platform.UNKNOWN
         }
     }
 

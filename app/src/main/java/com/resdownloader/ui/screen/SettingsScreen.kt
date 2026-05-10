@@ -1277,9 +1277,6 @@ private fun RuleEditorDialog(
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
-    // 防御性检查：确保 value 不为 null
-    val safeValue = value ?: ""
-    
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.domain_rule)) },
@@ -1294,10 +1291,8 @@ private fun RuleEditorDialog(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
-                    value = safeValue,
-                    onValueChange = { newValue -> 
-                        onValueChange(newValue ?: "")
-                    },
+                    value = value,
+                    onValueChange = onValueChange,
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 6,
                     maxLines = 10,
@@ -1839,6 +1834,13 @@ private fun AboutDialog(
                     text = stringResource(R.string.about_application),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.about_proxy_support),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(16.dp))

@@ -437,17 +437,23 @@ class DownloadService : Service() {
                 if (!decodeKey.isNullOrEmpty()) {
                     Log.d(TAG, "Attempting to decrypt file with decodeKey")
                     try {
-                        val encryptedData = tempFile.readBytes()
-                        val encryptedBase64 = android.util.Base64.encodeToString(encryptedData, android.util.Base64.NO_WRAP)
+                        // 使用 VideoDecryptor 进行解密
+                        val decryptResult = VideoDecryptor.decryptFile(
+                            tempFile,
+                            actualFile,
+                            decodeKey,
+                            VideoDecryptor.DecryptMode.WECHAT_VIDEO
+                        )
                         
-                        val decrypted = AesUtils.decrypt(encryptedBase64, decodeKey)
-                        if (decrypted != null) {
-                            val decryptedBytes = decrypted.toByteArray(charset("UTF-8"))
-                            actualFile.writeBytes(decryptedBytes)
+                        if (decryptResult.success) {
+                            // 修复 MP4 头
+                            VideoDecryptor.fixMp4Header(actualFile)
                             tempFile.delete()
+                            Log.d(TAG, "Decryption completed successfully")
                         } else {
+                            // 解密失败，尝试直接使用原文件
+                            Log.w(TAG, "Decryption failed: ${decryptResult.error}, using encrypted file")
                             tempFile.renameTo(actualFile)
-                            Log.w(TAG, "Decryption failed, saved encrypted file instead")
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Decryption failed", e)

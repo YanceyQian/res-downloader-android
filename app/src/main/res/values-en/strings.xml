@@ -79,11 +79,11 @@
     <string name="manual_input_vs_proxy">Manual Input vs Proxy Capture</string>
     <string name="manual_input_tip_direct">Direct Download: For direct links</string>
     <string name="manual_input_tip_proxy">Proxy Capture: For platform resources</string>
-    <string name="manual_input_direct_title">Manual Input Link</string>
-    <string name="manual_input_direct_desc">Paste direct media links (e.g., https://example.com/video.mp4) for direct download</string>
-    <string name="manual_input_proxy_title">Proxy Capture (Recommended)</string>
-    <string name="manual_input_proxy_desc">Enable proxy to auto-capture: Bilibili, Netease Music, QQ Music, Mini Programs, etc.</string>
-    <string name="manual_input_bilibili_note">Bilibili videos require proxy capture. Play page links cannot be downloaded directly.</string>
+    <string name="manual_input_direct_title">Share Link Parsing</string>
+    <string name="manual_input_direct_desc">Paste share links (e.g., Douyin video link) to auto-parse and download</string>
+    <string name="manual_input_proxy_title">Proxy Capture</string>
+    <string name="manual_input_proxy_desc">Enable proxy to auto-capture videos, audio, images, etc. from apps</string>
+    <string name="manual_input_bilibili_note">Bilibili videos: share link parsing recommended, also supports proxy capture</string>
 
     <!-- Download -->
     <string name="download">Download</string>
@@ -204,9 +204,10 @@
 
     <!-- Footer / About -->
     <string name="about_title">About</string>
-    <string name="about_description">A software that combines network resource sniffing + high-speed download, beautiful appearance, high performance and diversification, providing personal users with the ability to download network resources uploaded to major platforms!</string>
-    <string name="about_support">Supports almost all network applications on the market</string>
-    <string name="about_application">Douyin,Kuaishou,Xiaohongshu,WeChat,BiliBili,Mini Programs,Official Accounts,Kugou Music,QQ Music,YouTube,……</string>
+    <string name="about_description">A simple and easy-to-use network resource download tool. Supports share link parsing and proxy capture to download videos, audio, images and other resources. Designed for downloading your own resources uploaded to major platforms.</string>
+    <string name="about_support">Supported Platforms</string>
+    <string name="about_application">Douyin, Kuaishou, Xiaohongshu, Bilibili, Netease Music, WeChat Channels</string>
+    <string name="about_proxy_support">Proxy capture also supports: QQ Music, Kugou Music</string>
     <string name="about_forum">Forum</string>
     <string name="about_cert_download">Certificate Download</string>
     <string name="about_source_code">Source Code</string>

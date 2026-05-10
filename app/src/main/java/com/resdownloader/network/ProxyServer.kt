@@ -376,7 +376,7 @@ class ProxyServer(private val port: Int = 8899) {
             lowerUrl.contains(".pdf") -> ResourceType.PDF
             lowerUrl.contains(".doc") || lowerUrl.contains(".docx") -> ResourceType.DOC
             lowerUrl.contains(".xls") || lowerUrl.contains(".xlsx") -> ResourceType.XLS
-            else -> ResourceType.OTHER
+            else -> ResourceType.STREAM
         }
     }
 
@@ -391,9 +391,9 @@ class ProxyServer(private val port: Int = 8899) {
             lowerHost.contains("gifshow.com") -> Platform.KUAISHOU
             lowerHost.contains("xiaohongshu.com") || lowerHost.contains("xhslink.com") ||
             lowerHost.contains("xhscdn.com") -> Platform.XIAOHONGSHU
-            lowerHost.contains("kugou.com") || lowerHost.contains("kgimg.com") -> Platform.KUGOU
+            lowerHost.contains("kugou.com") || lowerHost.contains("kgimg.com") -> Platform.KOUGOU
             lowerHost.contains("qq.com") && (lowerHost.contains("music") || lowerHost.contains("y.qq")) -> Platform.QQMUSIC
-            else -> Platform.OTHER
+            else -> Platform.UNKNOWN
         }
     }
 

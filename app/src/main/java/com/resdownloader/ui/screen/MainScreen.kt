@@ -152,11 +152,56 @@ fun MainScreen(
                             color = MaterialTheme.colorScheme.outline
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = if (isProxyRunning) stringResource(R.string.pull_to_refresh) else "请先启动代理",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
+                        
+                        // 根据代理状态显示不同的提示
+                        if (isProxyRunning) {
+                            Text(
+                                text = "正在抓取中...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            // 未启动代理时显示两种方式的快捷入口
+                            Text(
+                                text = "试试这两种方式获取资源：",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            // 分享链接快捷按钮
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                FilledTonalButton(
+                                    onClick = { showAddDialog = true },
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    )
+                                ) {
+                                    Icon(
+                                        Icons.Default.Link,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("粘贴链接")
+                                }
+                                
+                                // 启动代理按钮
+                                OutlinedButton(
+                                    onClick = onStartProxy
+                                ) {
+                                    Icon(
+                                        Icons.Default.WifiTethering,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("启动代理")
+                                }
+                            }
+                        }
                     }
                 }
             } else {
@@ -253,6 +298,11 @@ fun MainScreen(
                 onCopyLink(resource.url)
             }
         )
+    }
+    
+    // 未启动代理时显示使用引导
+    if (!isProxyRunning) {
+        UsageGuideCard()
     }
 }
 
@@ -444,13 +494,6 @@ fun ProxyStatusCard(
                         )
                     }
                 }
-            } else {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "💡 点击开关启动抓取，支持：抖音、快手、小红书、视频号、小程序、B站、酷狗、QQ音乐、YouTube等平台",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
             }
         }
     }

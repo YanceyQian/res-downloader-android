@@ -70,9 +70,10 @@ class LanguageManager @Inject constructor(
             R.string.download_proxy_tip -> "Use upstream proxy for downloads"
             R.string.full_intercept_tip -> "Full interception for WeChat video accounts"
             R.string.insert_tail_tip -> "Add new data to list tail"
-            R.string.about_description -> "A network resource sniffing and high-speed download tool."
+            R.string.about_description -> "A simple and easy-to-use network resource download tool. Supports share link parsing and proxy capture to download videos, audio, images and other resources."
             R.string.about_support -> "Supported platforms:"
-            R.string.about_application -> "WeChat Video, Douyin, Kuaishou, Xiaohongshu, Bilibili, Kugou Music, QQ Music..."
+            R.string.about_application -> "Douyin, Kuaishou, Xiaohongshu, Bilibili, Netease Music, WeChat Channels"
+            R.string.about_proxy_support -> "Proxy capture also supports: QQ Music, Kugou Music"
             else -> null
         }
     }

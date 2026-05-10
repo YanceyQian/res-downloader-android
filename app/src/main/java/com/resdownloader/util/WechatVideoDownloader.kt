@@ -1,9 +1,14 @@
 package com.resdownloader.util
 
 import android.util.Log
+import com.resdownloader.data.model.Platform
 import com.resdownloader.data.model.ResourceInfo
 import com.resdownloader.data.model.ResourceType
+import com.resdownloader.network.PlatformDownloader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -27,7 +32,10 @@ import java.util.regex.Pattern
  * 3. 下载并解密视频
  * 4. 保存到本地文件
  */
-class WechatVideoDownloader {
+class WechatVideoDownloader : PlatformDownloader {
+
+    // PlatformDownloader 接口实现
+    override val platform: Platform = Platform.WECHAT
 
     companion object {
         private const val TAG = "WechatVideoDownloader"
@@ -93,6 +101,8 @@ class WechatVideoDownloader {
             val videoId = extractVideoId(shareUrl)
             if (videoId == null) {
                 Log.e(TAG, "Failed to extract video ID from URL")
+                // 触发 URL 解析错误
+                onResolveError?.invoke(Exception("无法提取视频 ID"))
                 return@withContext null
             }
             
@@ -100,6 +110,8 @@ class WechatVideoDownloader {
             val videoInfo = fetchVideoInfo(videoId)
             if (videoInfo == null) {
                 Log.e(TAG, "Failed to fetch video info")
+                // API 获取失败，可能需要更新
+                onResolveError?.invoke(Exception("API 获取视频信息失败"))
                 return@withContext null
             }
             
@@ -108,8 +120,21 @@ class WechatVideoDownloader {
             
         } catch (e: Exception) {
             Log.e(TAG, "Error resolving video", e)
+            onResolveError?.invoke(e)
             null
         }
+    }
+
+    /**
+     * 错误回调（由调用者设置）
+     */
+    var onResolveError: ((Exception) -> Unit)? = null
+
+    /**
+     * 设置错误回调
+     */
+    fun setErrorCallback(callback: ((Exception) -> Unit)?) {
+        this.onResolveError = callback
     }
 
     /**
@@ -493,5 +518,108 @@ class WechatVideoDownloader {
      */
     private fun String.toRequestBody(mediaType: String): okhttp3.RequestBody {
         return okhttp3.RequestBody.create(mediaType.toMediaType(), this)
+    }
+
+    // ==================== PlatformDownloader 接口实现 ====================
+
+    /**
+     * 解析资源信息（PlatformDownloader 接口）
+     */
+    override suspend fun resolve(url: String): PlatformDownloader.ResolveResult {
+        return try {
+            val videoInfo = resolveVideo(url)
+            if (videoInfo == null) {
+                return PlatformDownloader.ResolveResult(
+                    success = false,
+                    error = "无法解析微信视频链接，请检查链接格式"
+                )
+            }
+
+            val resource = ResourceInfo(
+                id = "wechat_${System.currentTimeMillis()}",
+                url = videoInfo.videoUrl,
+                filename = cleanFilename(videoInfo.title),
+                platform = Platform.WECHAT,
+                type = ResourceType.VIDEO,
+                size = videoInfo.size,
+                timestamp = System.currentTimeMillis(),
+                extraInfo = mapOf(
+                    "video_id" to videoInfo.videoId,
+                    "decode_key" to (videoInfo.decodeKey ?: ""),
+                    "cover_url" to (videoInfo.coverUrl ?: "")
+                )
+            )
+
+            PlatformDownloader.ResolveResult(success = true, resource = resource)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error resolving URL", e)
+            PlatformDownloader.ResolveResult(success = false, error = e.message ?: "未知错误")
+        }
+    }
+
+    /**
+     * 下载资源（PlatformDownloader 接口）
+     */
+    override suspend fun download(resource: ResourceInfo, outputDir: File): Flow<PlatformDownloader.DownloadProgress> = flow {
+        emit(PlatformDownloader.DownloadProgress(
+            taskId = resource.id,
+            progress = 0,
+            downloadedBytes = 0,
+            totalBytes = 0,
+            status = PlatformDownloader.Status.DOWNLOADING
+        ))
+
+        try {
+            val result = downloadAndDecrypt(
+                videoInfo = VideoInfo(
+                    videoId = resource.id,
+                    title = resource.filename,
+                    videoUrl = resource.url,
+                    coverUrl = null,
+                    decodeKey = resource.decodeKey,
+                    duration = 0L,
+                    size = resource.size
+                ),
+                outputDir = outputDir
+            )
+
+            if (result.success) {
+                emit(PlatformDownloader.DownloadProgress(
+                    taskId = resource.id,
+                    progress = 100,
+                    downloadedBytes = result.file?.length() ?: 0,
+                    totalBytes = result.file?.length() ?: 0,
+                    status = PlatformDownloader.Status.COMPLETED,
+                    outputFile = result.file
+                ))
+            } else {
+                emit(PlatformDownloader.DownloadProgress(
+                    taskId = resource.id,
+                    progress = 0,
+                    downloadedBytes = 0,
+                    totalBytes = 0,
+                    status = PlatformDownloader.Status.FAILED,
+                    error = result.error
+                ))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Download error", e)
+            emit(PlatformDownloader.DownloadProgress(
+                taskId = resource.id,
+                progress = 0,
+                downloadedBytes = 0,
+                totalBytes = 0,
+                status = PlatformDownloader.Status.FAILED,
+                error = e.message
+            ))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * 取消下载（PlatformDownloader 接口）
+     */
+    override fun cancel() {
+        // 微信下载暂不支持取消
+        Log.d(TAG, "Cancel requested but not implemented")
     }
 }

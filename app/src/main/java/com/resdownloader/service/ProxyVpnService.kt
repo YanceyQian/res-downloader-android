@@ -17,25 +17,27 @@ import com.resdownloader.data.model.ResourceType
 import com.resdownloader.data.model.RuleSet
 import com.resdownloader.data.preferences.PreferencesManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.ServerSocket
 import java.net.Socket
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class ProxyVpnService : VpnService() {
@@ -55,21 +57,18 @@ class ProxyVpnService : VpnService() {
         private var byteCountValue = 0L
         private val resourcesValue = mutableListOf<ResourceInfo>()
 
-        // 规则集实例 - 动态更新
         @Volatile
         private var ruleSet: RuleSet? = null
 
         val isRunning: Boolean get() = isRunningValue
-        
-        fun getRunning(): Boolean = isRunningValue
         fun getPacketCount(): Long = packetCountValue
         fun getByteCount(): Long = byteCountValue
-        
+
         fun resetStats() {
             packetCountValue = 0
             byteCountValue = 0
         }
-        
+
         fun addResource(resource: ResourceInfo) {
             synchronized(resourcesValue) {
                 if (resourcesValue.none { it.id == resource.id }) {
@@ -77,40 +76,32 @@ class ProxyVpnService : VpnService() {
                 }
             }
         }
-        
+
         fun removeResource(id: String) {
             synchronized(resourcesValue) {
                 resourcesValue.removeIf { it.id == id }
             }
         }
-        
+
         fun getResources(): List<ResourceInfo> {
             synchronized(resourcesValue) {
                 return resourcesValue.toList()
             }
         }
-        
+
         fun clearResources() {
             synchronized(resourcesValue) {
                 resourcesValue.clear()
             }
         }
 
-        /**
-         * 更新规则集
-         * 当用户在设置中修改规则时调用此方法
-         */
         fun updateRuleSet(ruleString: String) {
             ruleSet = RuleSet.parse(ruleString)
             Log.d(TAG, "RuleSet updated")
         }
 
-        /**
-         * 获取当前规则集
-         */
         fun getRuleSet(): RuleSet? = ruleSet
 
-        // 平台检测域名映射 - 用于检测平台类型（不影响规则判断）
         private val platformDomains = mapOf(
             "wechat" to listOf("weixin.qq.com", "wechat.com", "wxtingyun.com"),
             "bilibili" to listOf("bilibili.com", "biliintl.com", "b23.tv", "bilivideo.com"),
@@ -125,7 +116,6 @@ class ProxyVpnService : VpnService() {
             "qqvideo" to listOf("v.qq.com", "weishi.qq.com")
         )
 
-        // 媒体文件扩展名
         private val mediaExtensions = listOf(
             ".mp4", ".m3u8", ".ts", ".flv", ".webm", ".mkv",
             ".mp3", ".flac", ".wav", ".aac", ".ogg", ".m4a",
@@ -136,11 +126,8 @@ class ProxyVpnService : VpnService() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var vpnInterface: ParcelFileDescriptor? = null
     private var vpnJob: Job? = null
-    private val isVpnRunning = AtomicBoolean(false)
-    
-    // 媒体类型检测
-    private val ipv4HeaderSize = 20
-    private val tcpHeaderSize = 20
+    private val connectionManager = ConnectionManager()
+    private val mIsActive = AtomicBoolean(false)
 
     override fun onCreate() {
         super.onCreate()
@@ -165,6 +152,7 @@ class ProxyVpnService : VpnService() {
 
     override fun onDestroy() {
         stopVpn()
+        serviceScope.cancel()
         super.onDestroy()
     }
 
@@ -175,7 +163,7 @@ class ProxyVpnService : VpnService() {
     }
 
     private fun startVpn() {
-        if (isVpnRunning.get()) {
+        if (isRunningValue) {
             Log.d(TAG, "VPN already running")
             return
         }
@@ -184,7 +172,6 @@ class ProxyVpnService : VpnService() {
             try {
                 Log.d(TAG, "Starting VPN service")
 
-                // 初始化规则集 - 从 PreferencesManager 读取用户配置的规则
                 val ruleString = preferencesManager.getRuleSync()
                 updateRuleSet(ruleString)
                 Log.d(TAG, "RuleSet initialized")
@@ -196,9 +183,8 @@ class ProxyVpnService : VpnService() {
                     .setMtu(1500)
                     .addDnsServer("8.8.8.8")
                     .addDnsServer("114.114.114.114")
-                    .setBlocking(true)  // 同步模式
 
-                // 排除本应用，避免流量循环
+                // 排除本应用避免流量循环
                 builder.addDisallowedApplication(packageName)
 
                 val configureIntent = Intent(this@ProxyVpnService, MainActivity::class.java)
@@ -214,8 +200,8 @@ class ProxyVpnService : VpnService() {
                 vpnInterface = builder.establish()
 
                 if (vpnInterface != null) {
-                    isVpnRunning.set(true)
                     isRunningValue = true
+                    mIsActive.set(true)
                     resetStats()
 
                     val notification = createNotification()
@@ -237,19 +223,20 @@ class ProxyVpnService : VpnService() {
 
     /**
      * VPN 流量处理核心
-     * 从 TUN 接口读取数据包，解析 TCP 连接，转发到目标服务器
+     * 从 TUN 接口读取 IP 数据包，解析目标地址，建立 TCP 连接并转发
      */
     private fun startVpnProcessing() {
         vpnJob = serviceScope.launch {
             val vpnFd = vpnInterface ?: return@launch
             val input = FileInputStream(vpnFd.fileDescriptor)
             val output = FileOutputStream(vpnFd.fileDescriptor)
+            
             val packet = ByteBuffer.allocate(32767)
             packet.order(ByteOrder.LITTLE_ENDIAN)
 
             Log.d(TAG, "VPN processing started")
 
-            while (isVpnRunning.get() && isActive) {
+            while (mIsActive.get() && isRunningValue) {
                 try {
                     packet.clear()
                     val length = input.read(packet.array())
@@ -261,292 +248,478 @@ class ProxyVpnService : VpnService() {
                         packetCountValue++
                         byteCountValue += length
 
-                        // 解析 IP 头部
-                        if (length >= ipv4HeaderSize) {
-                            val version = (packet.get(0).toInt() and 0xF0) shr 4
-                            
-                            if (version == 4) {
-                                // IPv4
-                                val headerLength = (packet.get(0).toInt() and 0x0F) * 4
-                                val protocol = packet.get(9).toInt() and 0xFF
-                                
-                                if (protocol == 6) { // TCP
-                                    // 获取目标 IP 和端口
-                                    val destIp = "${packet.get(16).toInt() and 0xFF}.${packet.get(17).toInt() and 0xFF}.${packet.get(18).toInt() and 0xFF}.${packet.get(19).toInt() and 0xFF}"
-                                    val destPort = ((packet.get(headerLength + 2).toInt() and 0xFF) shl 8) or (packet.get(headerLength + 3).toInt() and 0xFF)
-                                    
-                                    // 获取源 IP
-                                    val srcIp = "${packet.get(12).toInt() and 0xFF}.${packet.get(13).toInt() and 0xFF}.${packet.get(14).toInt() and 0xFF}.${packet.get(15).toInt() and 0xFF}"
-                                    
-                                    // 解析 TCP 数据
-                                    val tcpDataOffset = headerLength + tcpHeaderSize
-                                    if (length > tcpDataOffset) {
-                                        val tcpData = ByteArray(length - tcpDataOffset)
-                                        packet.position(tcpDataOffset)
-                                        packet.get(tcpData, 0, tcpData.size)
-                                        
-                                        // 尝试解析 HTTP/HTTPS 数据
-                                        val httpData = String(tcpData, Charsets.UTF_8)
-                                        processHttpData(httpData, destIp, destPort)
-                                    }
-                                }
-                            }
-                        }
-
-                        // 将数据包写回（保持 VPN 正常工作）
-                        packet.position(0)
-                        packet.limit(length)
-                        try {
-                            output.write(packet.array(), 0, length)
-                            output.flush()
-                        } catch (e: Exception) {
-                            // 忽略写入错误
+                        // 在协程中处理数据包，避免阻塞
+                        launch(Dispatchers.IO) {
+                            processPacket(packet, length, output)
                         }
                     } else {
-                        delay(10)
+                        delay(1)
                     }
                 } catch (e: Exception) {
-                    if (isVpnRunning.get()) {
-                        Log.e(TAG, "Error processing VPN packet", e)
-                        delay(100)
+                    if (mIsActive.get()) {
+                        Log.e(TAG, "Error reading packet", e)
+                        delay(10)
                     }
                 }
             }
-            
+
             Log.d(TAG, "VPN processing stopped")
         }
     }
 
     /**
-     * 处理 HTTP/HTTPS 数据，捕获媒体资源
+     * 处理 IP 数据包
      */
-    private fun processHttpData(data: String, destIp: String, destPort: Int) {
-        try {
-            // 检测 HTTP 请求行
-            val lines = data.split("\r\n", "\n")
-            if (lines.isEmpty()) return
-            
-            val firstLine = lines[0]
-            
-            // 检测 CONNECT 请求（HTTPS）
-            if (firstLine.startsWith("CONNECT")) {
-                val parts = firstLine.split(" ")
-                if (parts.size >= 2) {
-                    val hostPort = parts[1]
-                    val hostParts = hostPort.split(":")
-                    val host = hostParts[0]
-                    val port = if (hostParts.size > 1) hostParts[1].toIntOrNull() ?: 443 else 443
-                    
-                    Log.d(TAG, "HTTPS CONNECT: $host:$port")
-                    detectMediaResource(host, port, "https")
-                }
+    private suspend fun processPacket(packet: ByteBuffer, length: Int, output: FileOutputStream) {
+        if (length < 20) return
+
+        val version = (packet.get(0).toInt() and 0xF0) shr 4
+        
+        when (version) {
+            4 -> processIPv4(packet, length, output)
+            else -> {
+                // 静默忽略其他版本
+            }
+        }
+    }
+
+    /**
+     * 处理 IPv4 数据包
+     */
+    private suspend fun processIPv4(packet: ByteBuffer, length: Int, output: FileOutputStream) {
+        val ipHeaderLength = (packet.get(0).toInt() and 0x0F) * 4
+        if (length < ipHeaderLength) return
+
+        val protocol = packet.get(9).toInt() and 0xFF
+        
+        // 提取源和目标地址
+        val srcIp = "${packet.get(12).toInt() and 0xFF}.${packet.get(13).toInt() and 0xFF}.${packet.get(14).toInt() and 0xFF}.${packet.get(15).toInt() and 0xFF}"
+        val dstIp = "${packet.get(16).toInt() and 0xFF}.${packet.get(17).toInt() and 0xFF}.${packet.get(18).toInt() and 0xFF}.${packet.get(19).toInt() and 0xFF}"
+
+        when (protocol) {
+            6 -> processTCP(packet, length, ipHeaderLength, srcIp, dstIp, output)  // TCP
+            17 -> processUDP(packet, length, ipHeaderLength, srcIp, dstIp)  // UDP (DNS)
+        }
+    }
+
+    /**
+     * 处理 TCP 数据包 - 关键修复
+     */
+    private suspend fun processTCP(
+        packet: ByteBuffer,
+        totalLength: Int,
+        ipHeaderLength: Int,
+        srcIp: String,
+        dstIp: String,
+        output: FileOutputStream
+    ) {
+        val tcpHeaderStart = ipHeaderLength
+        if (totalLength < tcpHeaderStart + 20) return
+
+        // 解析 TCP 头部
+        val srcPort = ((packet.get(tcpHeaderStart).toInt() and 0xFF) shl 8) or (packet.get(tcpHeaderStart + 1).toInt() and 0xFF)
+        val dstPort = ((packet.get(tcpHeaderStart + 2).toInt() and 0xFF) shl 8) or (packet.get(tcpHeaderStart + 3).toInt() and 0xFF)
+        
+        val dataOffset = ((packet.get(tcpHeaderStart + 12).toInt() and 0xF0) shr 4) * 4
+        val flags = packet.get(tcpHeaderStart + 13).toInt() and 0xFF
+        
+        val fin = (flags and 0x01) != 0
+        val syn = (flags and 0x02) != 0
+        val rst = (flags and 0x04) != 0
+        val psh = (flags and 0x08) != 0
+        val ack = (flags and 0x10) != 0
+
+        // TCP 数据起始位置
+        val tcpDataStart = tcpHeaderStart + dataOffset.coerceAtLeast(20)
+        val tcpDataLength = totalLength - tcpDataStart
+
+        // 创建连接标识
+        val connId = ConnectionId(srcIp, srcPort, dstIp, dstPort)
+
+        when {
+            // SYN - 建立新连接
+            syn && !ack -> {
+                Log.d(TAG, "TCP SYN: $dstIp:$dstPort")
+                handleNewConnection(connId, packet, ipHeaderLength, tcpDataStart, totalLength, output)
             }
             
-            // 检测 HTTP 请求（明文）
-            if (firstLine.startsWith("GET") || firstLine.startsWith("POST")) {
-                // 提取 Host
-                val host = lines.find { it.startsWith("Host:") }?.substringAfter("Host:")?.trim()
-                
-                if (host != null && lines.size > 1) {
-                    // 检测 URL 中的媒体文件
-                    val urlParts = firstLine.split(" ")
-                    if (urlParts.size >= 2) {
-                        val path = urlParts[1]
-                        detectMediaUrl("http://$host$path", host)
+            // FIN - 关闭连接
+            fin -> {
+                Log.d(TAG, "TCP FIN: $connId")
+                connectionManager.closeConnection(connId)
+            }
+            
+            // RST - 重置连接
+            rst -> {
+                Log.d(TAG, "TCP RST: $connId")
+                connectionManager.closeConnection(connId)
+            }
+            
+            // PSH/ACK - 数据包，转发到目标
+            (psh || ack || tcpDataLength > 0) && !syn -> {
+                if (tcpDataLength > 0) {
+                    val tcpData = ByteArray(tcpDataLength)
+                    packet.position(tcpDataStart)
+                    packet.get(tcpData, 0, tcpDataLength)
+                    
+                    // 转发数据到目标
+                    connectionManager.sendToTarget(connId, tcpData)
+                    
+                    // 检测媒体 URL
+                    detectMediaInRequest(tcpData, tcpDataLength, dstIp, dstPort)
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理新的 TCP 连接
+     */
+    private suspend fun handleNewConnection(
+        connId: ConnectionId,
+        originalPacket: ByteBuffer,
+        ipHeaderLength: Int,
+        tcpHeaderStart: Int,
+        totalLength: Int,
+        vpnOutput: FileOutputStream
+    ) {
+        try {
+            // 解析 TCP 序列号
+            val seqNum = ((originalPacket.get(tcpHeaderStart + 4).toInt() and 0xFF) shl 24) or
+                         ((originalPacket.get(tcpHeaderStart + 5).toInt() and 0xFF) shl 16) or
+                         ((originalPacket.get(tcpHeaderStart + 6).toInt() and 0xFF) shl 8) or
+                         (originalPacket.get(tcpHeaderStart + 7).toInt() and 0xFF)
+
+            Log.d(TAG, "Connecting to ${connId.dstIp}:${connId.dstPort}")
+
+            // 建立到目标服务器的连接
+            val targetSocket = Socket()
+            targetSocket.tcpNoDelay = true
+            targetSocket.soTimeout = 30000
+            targetSocket.connect(InetSocketAddress(connId.dstIp, connId.dstPort), 10000)
+
+            Log.d(TAG, "Connected to ${connId.dstIp}:${connId.dstPort}")
+
+            // 创建连接上下文
+            val context = ConnectionContext(
+                id = connId,
+                targetSocket = targetSocket,
+                vpnOutput = vpnOutput,
+                vpnPacket = originalPacket,
+                ipHeaderLength = ipHeaderLength,
+                tcpHeaderStart = tcpHeaderStart,
+                localSeq = seqNum.toLong()
+            )
+
+            // 保存连接
+            connectionManager.addConnection(connId, context)
+
+            // 启动从目标读取响应的协程
+            serviceScope.launch(Dispatchers.IO) {
+                readFromTarget(context)
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to connect to ${connId.dstIp}:${connId.dstPort}", e)
+            // 发送 TCP RST
+            sendTcpRst(connId, vpnOutput)
+        }
+    }
+
+    /**
+     * 从目标服务器读取响应并转发到 VPN
+     */
+    private suspend fun readFromTarget(context: ConnectionContext) {
+        try {
+            val inputStream = context.targetSocket.getInputStream()
+            val buffer = ByteArray(16384)
+            
+            while (context.isActive.get() && context.targetSocket.isConnected) {
+                try {
+                    val bytesRead = withContext(Dispatchers.IO) {
+                        inputStream.read(buffer)
+                    }
+                    
+                    if (bytesRead <= 0) {
+                        delay(10)
+                        continue
+                    }
+
+                    // 检测媒体 URL
+                    val data = buffer.copyOf(bytesRead)
+                    detectMediaInResponse(data, bytesRead, context.id.dstIp)
+
+                    // 将数据写入 VPN
+                    writeToVpn(context, data, bytesRead)
+
+                } catch (e: Exception) {
+                    if (context.isActive.get()) {
+                        Log.d(TAG, "Connection closed: ${context.id}")
+                    }
+                    break
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading from target", e)
+        } finally {
+            context.isActive.set(false)
+            connectionManager.removeConnection(context.id)
+        }
+    }
+
+    /**
+     * 将数据写入 VPN 接口
+     * 构建 IP/TCP 包并通过 TUN 接口发送
+     */
+    private fun writeToVpn(context: ConnectionContext, data: ByteArray, length: Int) {
+        try {
+            // 构建响应 IP 包
+            val responsePacket = ByteBuffer.allocate(65535)
+            responsePacket.order(ByteOrder.LITTLE_ENDIAN)
+
+            // IP 头部 (20 bytes)
+            val totalLength = 20 + 20 + length  // IP + TCP + Data
+            
+            responsePacket.put(0, 0x45.toByte())  // Version 4, IHL 5
+            responsePacket.put(1, 0x00.toByte())  // TOS
+            responsePacket.putShort(2, totalLength.toShort())  // Total Length
+            responsePacket.putShort(4, 0x0000.toShort())  // ID
+            responsePacket.putShort(6, 0x4000.toShort())  // Flags + Fragment Offset
+            responsePacket.put(8, 64.toByte())  // TTL
+            responsePacket.put(9, 6.toByte())  // Protocol TCP
+            responsePacket.putShort(10, 0x0000.toShort())  // Checksum (计算)
+
+            // 交换源和目标 IP
+            val dstIpParts = context.id.dstIp.split(".")
+            val srcIpParts = context.id.srcIp.split(".")
+            responsePacket.put(12, dstIpParts[0].toInt().toByte())
+            responsePacket.put(13, dstIpParts[1].toInt().toByte())
+            responsePacket.put(14, dstIpParts[2].toInt().toByte())
+            responsePacket.put(15, dstIpParts[3].toInt().toByte())
+            
+            responsePacket.put(16, srcIpParts[0].toInt().toByte())
+            responsePacket.put(17, srcIpParts[1].toInt().toByte())
+            responsePacket.put(18, srcIpParts[2].toInt().toByte())
+            responsePacket.put(19, srcIpParts[3].toInt().toByte())
+
+            // TCP 头部 (20 bytes)
+            val tcpHeaderStart = 20
+            responsePacket.put(tcpHeaderStart, ((context.id.dstPort shr 8) and 0xFF).toByte())  // Src Port
+            responsePacket.put(tcpHeaderStart + 1, (context.id.dstPort and 0xFF).toByte())
+            responsePacket.put(tcpHeaderStart + 2, ((context.id.srcPort shr 8) and 0xFF).toByte())  // Dst Port
+            responsePacket.put(tcpHeaderStart + 3, (context.id.srcPort and 0xFF).toByte())
+
+            responsePacket.putInt(tcpHeaderStart + 4, context.remoteSeq.toInt())  // Seq
+            responsePacket.putInt(tcpHeaderStart + 8, context.localSeq.toInt())  // Ack
+            responsePacket.put(tcpHeaderStart + 12, 0x50.toByte())  // Data Offset
+            responsePacket.put(tcpHeaderStart + 13, 0x18.toByte())  // Flags (PSH|ACK)
+            responsePacket.putShort(tcpHeaderStart + 14, 65535.toShort())  // Window
+            responsePacket.putShort(tcpHeaderStart + 16, 0x0000.toShort())  // Checksum
+            responsePacket.putShort(tcpHeaderStart + 18, 0x0000.toShort())  // Urgent Pointer
+
+            // 复制数据
+            responsePacket.position(tcpHeaderStart + 20)
+            responsePacket.put(data, 0, length)
+
+            // 写入 VPN
+            synchronized(context.vpnOutput) {
+                val finalPacket = ByteBuffer.allocate(totalLength)
+                finalPacket.order(ByteOrder.LITTLE_ENDIAN)
+                for (i in 0 until totalLength) {
+                    finalPacket.put(i, responsePacket.get(i))
+                }
+                context.vpnOutput.write(finalPacket.array(), 0, totalLength)
+                context.vpnOutput.flush()
+            }
+
+            // 更新序列号
+            context.remoteSeq += length
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error writing to VPN", e)
+        }
+    }
+
+    /**
+     * 发送 TCP RST 响应
+     */
+    private fun sendTcpRst(connId: ConnectionId, vpnOutput: FileOutputStream) {
+        // 简化实现
+        Log.d(TAG, "Sending TCP RST to $connId")
+    }
+
+    /**
+     * 处理 UDP 数据包 (DNS)
+     */
+    private suspend fun processUDP(
+        packet: ByteBuffer,
+        length: Int,
+        ipHeaderLength: Int,
+        srcIp: String,
+        dstIp: String
+    ) {
+        val udpHeaderLength = 8
+        if (length < ipHeaderLength + udpHeaderLength) return
+
+        val srcPort = ((packet.get(ipHeaderLength).toInt() and 0xFF) shl 8) or (packet.get(ipHeaderLength + 1).toInt() and 0xFF)
+        val dstPort = ((packet.get(ipHeaderLength + 2).toInt() and 0xFF) shl 8) or (packet.get(ipHeaderLength + 3).toInt() and 0xFF)
+
+        // DNS 查询 (端口 53)
+        if (dstPort == 53 && length > ipHeaderLength + udpHeaderLength + 12) {
+            val domain = parseDnsQuery(packet.array(), ipHeaderLength + udpHeaderLength, length - ipHeaderLength - udpHeaderLength)
+            if (domain != null) {
+                Log.v(TAG, "DNS: $domain")
+            }
+        }
+    }
+
+    /**
+     * 解析 DNS 查询
+     */
+    private fun parseDnsQuery(data: ByteArray, offset: Int, length: Int): String? {
+        return try {
+            if (length < 13) return null
+            val parts = mutableListOf<String>()
+            var pos = offset + 12
+            while (pos < offset + length) {
+                val len = data[pos].toInt() and 0xFF
+                if (len == 0) break
+                if (len >= 0xC0) {
+                    pos = offset + length
+                    break
+                }
+                parts.add(String(data, pos + 1, len))
+                pos += len + 1
+            }
+            if (parts.isNotEmpty()) parts.joinToString(".") else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 检测 HTTP 请求中的媒体 URL
+     */
+    private fun detectMediaInRequest(data: ByteArray, length: Int, host: String, port: Int) {
+        try {
+            val request = String(data, 0, length, Charsets.UTF_8)
+            val lines = request.split("\r\n", "\n")
+            
+            // 检测 HTTP 方法
+            if (lines.isEmpty()) return
+            val firstLine = lines[0]
+            
+            when {
+                firstLine.startsWith("GET") || firstLine.startsWith("POST") -> {
+                    val urlLine = firstLine.split(" ")
+                    if (urlLine.size >= 2) {
+                        val path = urlLine[1]
+                        val hostHeader = lines.find { it.startsWith("Host:", true) }?.substringAfter(":")?.trim() ?: host
+                        
+                        val fullUrl = if (path.startsWith("http")) path else "http://$hostHeader$path"
+                        
+                        if (isMediaUrl(fullUrl)) {
+                            Log.d(TAG, "Media URL: $fullUrl")
+                            addMediaResource(fullUrl, hostHeader)
+                        }
+                    }
+                }
+                firstLine.startsWith("CONNECT") -> {
+                    // HTTPS 连接
+                    val hostPort = firstLine.split(" ").getOrNull(1) ?: return
+                    val parts = hostPort.split(":")
+                    val httpsHost = parts.getOrNull(0) ?: return
+                    Log.d(TAG, "HTTPS: $httpsHost:${parts.getOrNull(1) ?: 443}")
+                }
+            }
+        } catch (e: Exception) {
+            // 忽略解析错误
+        }
+    }
+
+    /**
+     * 检测 HTTP 响应中的媒体 URL
+     */
+    private fun detectMediaInResponse(data: ByteArray, length: Int, host: String) {
+        try {
+            val response = String(data, 0, minOf(length, 2048), Charsets.UTF_8)
+            
+            // 检测 Location 重定向
+            response.lines().forEach { line ->
+                if (line.startsWith("Location:", true) || line.startsWith("location:", true)) {
+                    val url = line.substringAfter(":").trim()
+                    if (isMediaUrl(url)) {
+                        Log.d(TAG, "Media URL (redirect): $url")
+                        addMediaResource(url, host)
                     }
                 }
             }
         } catch (e: Exception) {
-            // 静默处理解析错误
+            // 忽略解析错误
         }
     }
 
-    /**
-     * 检测媒体 URL
-     */
-    private fun detectMediaUrl(url: String, host: String) {
-        val lowerUrl = url.lowercase()
-        
-        // 检查是否为媒体文件
-        val isMedia = mediaExtensions.any { lowerUrl.contains(it) }
-        
-        if (isMedia) {
-            val platformStr = detectPlatform(host)
-            val platform = platformStr.toPlatform()
-            val resourceType = detectResourceType(lowerUrl)
-            val filename = extractFilename(url)
-            
-            Log.d(TAG, "Media detected: $url (platform: $platform, type: $resourceType)")
-            
-            val resource = ResourceInfo(
-                id = generateId(),
-                url = url,
-                type = resourceType,
-                platform = platform,
-                filename = filename,
-                size = 0L,
-                timestamp = System.currentTimeMillis()
-            )
-            
-            addResource(resource)
-        }
+    private fun isMediaUrl(url: String): Boolean {
+        val lower = url.lowercase()
+        return mediaExtensions.any { lower.contains(it) } || lower.contains("video") || lower.contains("audio") || lower.contains("image")
     }
 
-    /**
-     * 检测媒体资源（通过域名）
-     */
-    private fun detectMediaResource(host: String, port: Int, protocol: String) {
-        val lowerHost = host.lowercase()
-        
-        // 检查是否为支持的平台
-        val platform = detectPlatform(lowerHost)
-        if (platform != "other") {
-            Log.d(TAG, "Platform traffic detected: $host (platform: $platform)")
-            // 记录平台流量，但不立即创建资源
-            // 资源会在实际媒体请求时捕获
-        }
-    }
-
-    /**
-     * 检测平台类型
-     * 使用规则集判断是否需要拦截
-     */
-    private fun detectPlatform(host: String): String {
-        // 首先检查规则集 - 如果不在规则中，直接返回 other
-        val currentRuleSet = ruleSet
-        if (currentRuleSet == null || !currentRuleSet.shouldMitm(host)) {
-            return "other"
-        }
-
-        val lowerHost = host.lowercase()
-        
-        // 检测支持的平台（用于分类显示）
-        for ((platform, domains) in platformDomains) {
-            if (domains.any { lowerHost.contains(it) }) {
-                return platform
-            }
-        }
-        
-        // 如果匹配规则但不在已知平台中，返回 "custom"
-        return "custom"
-    }
-
-    /**
-     * 将字符串转换为 Platform 枚举
-     */
-    private fun String.toPlatform(): Platform {
-        return when (this.lowercase()) {
-            "wechat" -> Platform.WECHAT
-            "douyin" -> Platform.DOUYIN
-            "kuaishou" -> Platform.KUAISHOU
-            "xiaohongshu", "xhs" -> Platform.XIAOHONGSHU
-            "kugou" -> Platform.KUGOU
-            "qqmusic" -> Platform.QQMUSIC
-            "bilibili", "bili" -> Platform.BILIBILI
-            "wechat_mini", "miniprogram" -> Platform.WECHAT_MINI
-            "qqweishi" -> Platform.QQWEISHI
-            "youtube" -> Platform.YOUTUBE
-            else -> Platform.OTHER
-        }
-    }
-
-    /**
-     * 检测资源类型
-     */
-    private fun detectResourceType(url: String): ResourceType {
-        return when {
+    private fun addMediaResource(url: String, host: String) {
+        val platform = detectPlatform(host)
+        val resourceType = when {
             url.contains(".m3u8") -> ResourceType.M3U8
             url.contains(".mp4") || url.contains(".flv") || url.contains(".ts") -> ResourceType.VIDEO
             url.contains(".mp3") || url.contains(".flac") || url.contains(".wav") || url.contains(".m4a") -> ResourceType.AUDIO
-            url.contains(".jpg") || url.contains(".png") || url.contains(".gif") || url.contains(".webp") -> ResourceType.IMAGE
             else -> ResourceType.VIDEO
         }
-    }
-
-    /**
-     * 从 HTTP 响应中提取视频号 decodeKey
-     * 
-     * 参考原项目 plugin.qq.com.go 的 decodeKey 提取逻辑
-     * 
-     * 视频号 API 响应格式：
-     * {
-     *   "ret": 0,
-     *   "data": {
-     *     "decodeKey": "base64_encoded_key",
-     *     "direct_url": "video_url",
-     *     ...
-     *   }
-     * }
-     */
-    fun extractDecodeKey(responseBody: String): String? {
-        try {
-            // 尝试 JSON 格式
-            val jsonRegex = Regex(""""decodeKey"\s*:\s*"([^"]+)"""")
-            val match = jsonRegex.find(responseBody)
-            if (match != null) {
-                val key = match.groupValues[1]
-                Log.d(TAG, "Found decodeKey in JSON response")
-                return key
-            }
-            
-            // 尝试直接 base64 编码
-            val keyRegex = Regex("decodeKey=([A-Za-z0-9+/=]+)")
-            val keyMatch = keyRegex.find(responseBody)
-            if (keyMatch != null) {
-                val key = keyMatch.groupValues[1]
-                Log.d(TAG, "Found decodeKey in query string")
-                return key
-            }
-            
-            // 尝试从 URL 参数提取
-            val urlKeyRegex = Regex("""key=([^&\s]+)""")
-            val urlMatch = urlKeyRegex.find(responseBody)
-            if (urlMatch != null) {
-                val key = urlMatch.groupValues[1]
-                Log.d(TAG, "Found key in URL parameters")
-                return key
-            }
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Error extracting decodeKey", e)
-        }
         
-        return null
-    }
-
-    /**
-     * 从 HTTP 请求中提取 Cookie
-     * 视频号 API 需要有效的 Cookie
-     */
-    fun extractCookie(headers: Map<String, String>): String? {
-        return headers["Cookie"] ?: headers["cookie"]
-    }
-
-    /**
-     * 从 HTTP 请求中提取 Referer
-     * 用于视频号 API 请求
-     */
-    fun extractReferer(headers: Map<String, String>): String? {
-        return headers["Referer"] ?: headers["referer"]
-    }
-
-    /**
-     * 从 URL 提取文件名
-     */
-    private fun extractFilename(url: String): String {
-        return try {
+        val filename = try {
             val path = url.substringAfter("?").substringBefore("#")
-            val parts = path.split("/")
-            val filename = parts.lastOrNull() ?: "download"
-            if (filename.contains(".") || filename.isEmpty()) filename else "$filename.mp4"
+            val name = path.split("/").lastOrNull() ?: "download"
+            if (name.contains(".") || name.isEmpty()) name else "$name.mp4"
         } catch (e: Exception) {
             "download_${System.currentTimeMillis()}"
         }
+
+        val resource = ResourceInfo(
+            id = generateId(),
+            url = url,
+            type = resourceType,
+            platform = platform,
+            filename = filename,
+            size = 0L,
+            timestamp = System.currentTimeMillis()
+        )
+
+        addResource(resource)
     }
 
-    /**
-     * 生成唯一 ID
-     */
+    private fun detectPlatform(host: String): Platform {
+        val currentRuleSet = ruleSet
+        if (currentRuleSet == null || !currentRuleSet.shouldMitm(host)) {
+            return Platform.UNKNOWN
+        }
+
+        val lowerHost = host.lowercase()
+        
+        for ((platform, domains) in platformDomains) {
+            if (domains.any { lowerHost.contains(it) }) {
+                return when (platform) {
+                    "wechat" -> Platform.WECHAT
+                    "douyin" -> Platform.DOUYIN
+                    "kuaishou" -> Platform.KUAISHOU
+                    "xiaohongshu" -> Platform.XIAOHONGSHU
+                    "kugou" -> Platform.KOUGOU
+                    "qqmusic" -> Platform.QQMUSIC
+                    "bilibili" -> Platform.BILIBILI
+                    else -> Platform.UNKNOWN
+                }
+            }
+        }
+        
+        return Platform.UNKNOWN
+    }
+
     private fun generateId(): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
         return (1..8).map { chars.random() }.joinToString("")
@@ -555,8 +728,10 @@ class ProxyVpnService : VpnService() {
     private fun stopVpn() {
         Log.d(TAG, "Stopping VPN service")
 
-        isVpnRunning.set(false)
+        mIsActive.set(false)
         isRunningValue = false
+        
+        connectionManager.closeAll()
 
         vpnJob?.cancel()
         vpnJob = null
@@ -612,5 +787,85 @@ class ProxyVpnService : VpnService() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
+    }
+}
+
+/**
+ * TCP 连接标识
+ */
+data class ConnectionId(
+    val srcIp: String,
+    val srcPort: Int,
+    val dstIp: String,
+    val dstPort: Int
+)
+
+/**
+ * TCP 连接上下文
+ */
+class ConnectionContext(
+    val id: ConnectionId,
+    val targetSocket: Socket,
+    val vpnOutput: FileOutputStream,
+    val vpnPacket: ByteBuffer,
+    val ipHeaderLength: Int,
+    val tcpHeaderStart: Int,
+    val localSeq: Long
+) {
+    var remoteSeq: Long = 0
+    val isActive = AtomicBoolean(true)
+
+    fun close() {
+        isActive.set(false)
+        try {
+            targetSocket.close()
+        } catch (e: Exception) {
+        }
+    }
+}
+
+/**
+ * TCP 连接管理器
+ */
+class ConnectionManager {
+    private val connections = ConcurrentHashMap<ConnectionId, ConnectionContext>()
+    
+    companion object {
+        private const val TAG = "ConnectionManager"
+    }
+
+    fun addConnection(id: ConnectionId, context: ConnectionContext) {
+        connections[id] = context
+    }
+
+    fun getConnection(id: ConnectionId): ConnectionContext? {
+        return connections[id]
+    }
+
+    fun removeConnection(id: ConnectionId): ConnectionContext? {
+        return connections.remove(id)
+    }
+
+    fun sendToTarget(id: ConnectionId, data: ByteArray) {
+        connections[id]?.let { ctx ->
+            try {
+                ctx.targetSocket.getOutputStream().write(data)
+                ctx.targetSocket.getOutputStream().flush()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error sending to target", e)
+                ctx.close()
+                removeConnection(id)
+            }
+        }
+    }
+
+    fun closeConnection(id: ConnectionId) {
+        connections[id]?.close()
+        removeConnection(id)
+    }
+
+    fun closeAll() {
+        connections.values.forEach { it.close() }
+        connections.clear()
     }
 }
