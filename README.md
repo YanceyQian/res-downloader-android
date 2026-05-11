@@ -73,6 +73,7 @@
 | [APP_STORE_RELEASE.md](docs/APP_STORE_RELEASE.md) | 📱 应用商店发布指南 |
 | [SYNC_FLOW.md](docs/SYNC_FLOW.md) | 🔄 同步原项目更新流程 |
 | [GITHUB_RELEASE.md](docs/GITHUB_RELEASE.md) | 📦 GitHub Releases 发布指南 |
+| [PLUGIN_SYSTEM_FEASIBILITY.md](docs/PLUGIN_SYSTEM_FEASIBILITY.md) | ⚙️ 动态规则系统可行性分析 |
 
 ## 项目结构
 
